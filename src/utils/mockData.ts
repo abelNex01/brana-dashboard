@@ -1,0 +1,61 @@
+export const mockProjectHistory = [
+  {
+    client: "Dawit & Selam",
+    projectId: "BRN-9021",
+    file: "dawit_selam_main_v3.mp4",
+    type: "Wedding",
+    rawSize: "850GB",
+    format: "4K H.264",
+    finalSize: "12.4GB",
+    delivered: "2h ago",
+  },
+  {
+    client: "Yohannes & Helen",
+    projectId: "BRN-8842",
+    file: "helen_yohannes_full.mov",
+    type: "Wedding",
+    rawSize: "1.2TB",
+    format: "ProRes 422",
+    finalSize: "145GB",
+    delivered: "1d ago",
+  },
+  {
+    client: "Meron & Fitsum",
+    projectId: "BRN-7731",
+    file: "fitsum_meron_highlights.mp4",
+    type: "Wedding",
+    rawSize: "240GB",
+    format: "4K H.265",
+    finalSize: "4.8GB",
+    delivered: "3d ago",
+  },
+  {
+    client: "Almaz & Kibrom",
+    projectId: "BRN-6610",
+    file: "almaz_kibrom_teaser.mp4",
+    type: "Wedding",
+    rawSize: "120GB",
+    format: "1080p",
+    finalSize: "1.2GB",
+    delivered: "5d ago",
+  },
+  {
+    client: "Semhar & Mussie",
+    projectId: "BRN-5501",
+    file: "semhar_mussie_cinematic.mp4",
+    type: "Wedding",
+    rawSize: "4.5TB",
+    format: "4K ProRes",
+    finalSize: "210GB",
+    delivered: "1w ago",
+  },
+];
+
+
+export const mockProductionQueue = [
+  { project: "Tedros & Rahel", status: "Editing", progress: "85%" },
+  { project: "Eden & Bereket", status: "Filming", progress: "40%" },
+  { project: "Aman & Luwam", status: "Pre-prod", progress: "20%" },
+  { project: "Mulugeta & Aster", status: "Review", progress: "95%" },
+  { project: "Haben & Saron", status: "Editing", progress: "10%" },
+];
