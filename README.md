@@ -24,13 +24,13 @@ graph TD
 
 ### 1. State Management & Real-Time Sync
 Instead of utilizing heavy external state containers, the application implements a custom-designed client-side persistence and sync system using React hooks:
-* **Storage Engine (`useCrudStore`)**: Managed in [use-crud-store.ts](file:///c:/Users/hp/Desktop/dashboard-dark/src/hooks/use-crud-store.ts). It abstracts CRUD operations (Create, Read, Update, Delete) and backs them up to `localStorage` for persistence across sessions.
+* **Storage Engine (`useCrudStore`)**: Managed in [use-crud-store.ts](file:///c:/Users/hp/Desktop/Brana-dashboard/src/hooks/use-crud-store.ts). It abstracts CRUD operations (Create, Read, Update, Delete) and backs them up to `localStorage` for persistence across sessions.
 * **Sync Mechanism**: It listens for and dispatches window-level custom events (`crud-sync-${storageKey}`) upon item updates. This ensures that if a crew member is modified on the `TeamPage`, the change immediately reflects in the `Dashboard` or the `Navbar` quick-counters without requiring page refreshes or complex provider states.
 
 ### 2. Styling & Dark Theme Design
 * **Utility-First Styling**: Styled using **Tailwind CSS v4** combined with custom HSL color tokens.
-* **Dark Mode & Styling Tokens**: Supported via `next-themes` and configured in [index.html](file:///c:/Users/hp/Desktop/dashboard-dark/index.html) and [App.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/App.tsx).
-* **shadcn/ui Integration**: Layouts leverage Radix UI primitives configured in [components.json](file:///c:/Users/hp/Desktop/dashboard-dark/components.json).
+* **Dark Mode & Styling Tokens**: Supported via `next-themes` and configured in [index.html](file:///c:/Users/hp/Desktop/Brana-dashboard/index.html) and [App.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/App.tsx).
+* **shadcn/ui Integration**: Layouts leverage Radix UI primitives configured in [components.json](file:///c:/Users/hp/Desktop/Brana-dashboard/components.json).
 
 ---
 
@@ -39,7 +39,7 @@ Instead of utilizing heavy external state containers, the application implements
 Below is an overview of the directory organization in the project:
 
 ```
-dashboard-dark/
+Brana-dashboard/
 ├── src/                          # Frontend React source code
 │   ├── api/                      # OpenAPI and client-side communication layers
 │   │   ├── generated/            # Client libraries generated automatically
@@ -107,35 +107,35 @@ dashboard-dark/
 ## ⚡ Pages & Features Walkthrough
 
 ### 1. Operations Overview
-* Located at [Dashboard.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/Dashboard.tsx).
+* Located at [Dashboard.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/Dashboard.tsx).
 * Presents quick operational KPIs (YTD Revenue, Active Crew, Gear In-Use, Active Jobs).
 * Visualizes business charts via Recharts area diagrams and upcoming shoots timeline metrics.
 
 ### 2. Gear & Equipment Manager
-* Located at [GearEquipmentPage.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/GearEquipmentPage.tsx).
+* Located at [GearEquipmentPage.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/GearEquipmentPage.tsx).
 * Manage the film studio's hardware inventory.
 * Features filters for categories (Camera, Audio, Lighting, Drone) and status trackers (Available, Checked Out, Maintenance, Damaged).
 * Complete inline dialog forms to register new equipment or initiate maintenance tickets.
 
 ### 3. Team & Crew roster
-* Located at [TeamPage.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/TeamPage.tsx).
+* Located at [TeamPage.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/TeamPage.tsx).
 * Live list of available film crew members (Directors, Cinematographers, Gaffers, Editors, Sound Engineers).
 * Tracks current deployment statuses (In Field, Available, Editing, Off Duty) and lists active assignments.
 
 ### 4. Bento Financial Wallet
-* Located at [WalletPage.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/WalletPage.tsx).
+* Located at [WalletPage.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/WalletPage.tsx).
 * Dashboard for tracking expenses, revenues, and invoices.
 * Renders comparative bar-charts, monthly trends, and invoice distribution indicators.
 
 ### 5. Team Chat
-* Located at [ChatPage.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/ChatPage.tsx).
+* Located at [ChatPage.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/ChatPage.tsx).
 * Real-time team communication interface with message persistence.
 * Features team member sidebar with online status indicators, message search, and message history.
 * Supports message timestamps, read receipts, and user avatars.
 
 ### 🔒 6. Frontend Authorization & Security Gate
-* **Client-side Authentication**: Implemented via [AuthContext.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/contexts/AuthContext.tsx) storing user credentials securely inside `localStorage`.
-* **Split Layout Auth Page**: Formatted at [AuthPage.tsx](file:///c:/Users/hp/Desktop/dashboard-dark/src/pages/AuthPage.tsx) featuring a rotating cinematic slideshow on the left and a 3-step Sign-Up wizard on the right.
+* **Client-side Authentication**: Implemented via [AuthContext.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/contexts/AuthContext.tsx) storing user credentials securely inside `localStorage`.
+* **Split Layout Auth Page**: Formatted at [AuthPage.tsx](file:///c:/Users/hp/Desktop/Brana-dashboard/src/pages/AuthPage.tsx) featuring a rotating cinematic slideshow on the left and a 3-step Sign-Up wizard on the right.
 * **4-User Capacity Limit**: Restricts new registrations to a maximum of 4 active accounts. 
 * **Canvas-based Image Upload Compression**: Re-scales selected profile photos to `120x120px` JPEG at 70% quality, generating optimized tiny payloads (~5-10KB) to ensure `localStorage` stays clean and never exceeds its quota limit.
 * **Secure Route Guards**: Gated using `RequireAuth` and `GuestOnly` router components.
@@ -183,6 +183,9 @@ dashboard-dark/
 | `npm run preview`| Root | Runs a local preview of the build bundle |
 | `npm run typecheck` | Root / Server | Type-checks code using `tsc` compiler |
 | `npm run dev` | `server/` | Boots node API environment with live reloading |
+| `npm run test` | Root | Runs unit tests using Vitest |
+| `npm run test:watch` | Root | Runs unit tests in watch mode |
+| `npm run test:coverage`| Root | Runs unit tests and generates coverage report |
 
 ---
 

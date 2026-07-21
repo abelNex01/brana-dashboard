@@ -27,7 +27,8 @@ export function formatCurrency(amount: number, currency: Currency = "USD"): stri
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-  } catch {
+  } catch (e) {
+    console.warn("Currency formatting error:", e);
     return `${config.symbol}${amount.toFixed(2)}`;
   }
 }
@@ -46,7 +47,8 @@ export function formatDate(dateStr: string, fmt: string = "MMM d, yyyy"): string
   try {
     const d = parseISO(dateStr);
     return isValid(d) ? format(d, fmt) : "—";
-  } catch {
+  } catch (e) {
+    console.warn("Date parsing error:", e);
     return "—";
   }
 }
@@ -64,7 +66,8 @@ export function getRelativeTime(dateStr: string): string {
   try {
     const d = parseISO(dateStr);
     return isValid(d) ? formatDistanceToNow(d, { addSuffix: true }) : "—";
-  } catch {
+  } catch (e) {
+    console.warn("Relative time parsing error:", e);
     return "—";
   }
 }

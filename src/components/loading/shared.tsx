@@ -130,17 +130,16 @@ export const LoadingProgressBar = memo(function LoadingProgressBar({
   return (
     <div className="w-full max-w-[300px]">
       <div
-        className="relative h-[6px] w-full overflow-hidden rounded-full border border-black/[0.06] bg-black/[0.04] dark:border-white/[0.06] dark:bg-white/[0.05]"
+        className="relative h-[2px] w-full overflow-hidden rounded-full bg-black/[0.04] dark:bg-white/[0.05]"
         role="progressbar"
         aria-valuenow={rounded}
         aria-valuemin={0}
         aria-valuemax={100}
       >
         <div
-          className="absolute inset-0 origin-left rounded-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-lime-300"
+          className="absolute inset-0 origin-left rounded-full bg-black dark:bg-white"
           style={{
             transform: `scaleX(${progress / 100})`,
-            boxShadow: "0 0 16px rgba(16,185,129,0.55)",
           }}
         />
       </div>

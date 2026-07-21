@@ -45,7 +45,8 @@ export function loadFinanceState(): FinanceState {
         deletedItems: parsed.deletedItems ?? defaults.deletedItems,
       };
     }
-  } catch {
+  } catch (e) {
+    console.warn("Failed to load finance state:", e);
     /* corrupted data — fall through to defaults */
   }
   return createInitialFinanceState();

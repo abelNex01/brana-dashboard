@@ -1308,16 +1308,24 @@ export default function ChatPage() {
             </div>
           </div>
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <Input
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn(
-                "pl-9 h-9 text-sm placeholder:text-zinc-500",
-                theme === "dark" ? "bg-white/[0.03] border-white/[0.08] text-zinc-200" : "bg-white border-zinc-200 text-zinc-900"
-              )}
-            />
+            <div className="group flex items-center gap-2 px-3 h-10 rounded-lg bg-muted/50 border border-border/60 focus-within:border-primary/50 transition-colors w-full">
+              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              />
+              <span className="flex items-center gap-1 shrink-0">
+                <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+                  ⌘
+                </kbd>
+                <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+                  K
+                </kbd>
+              </span>
+            </div>
           </div>
           {!showArchived && (
             <div className={cn("flex items-center gap-1.5 p-1 rounded-xl", theme === "dark" ? "bg-white/[0.03]" : "bg-zinc-100")}>

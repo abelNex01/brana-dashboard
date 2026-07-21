@@ -36,7 +36,8 @@ export function useFinanceFilters() {
           try {
             const itemDate = parseISO(itemDateStr);
             return isWithinInterval(itemDate, { start, end });
-          } catch {
+          } catch (e) {
+            console.warn("Date interval parsing error:", e);
             return true;
           }
         });
@@ -110,7 +111,8 @@ export function useFinanceFilters() {
             if (typeof val === "object") {
               try {
                 return JSON.stringify(val).toLowerCase().includes(query);
-              } catch {
+              } catch (e) {
+                console.warn("JSON parsing error in search filter:", e);
                 return false;
               }
             }

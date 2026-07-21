@@ -21,6 +21,7 @@ import {
   Cpu,
   Calendar,
   DollarSign,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,6 +43,7 @@ import {
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "next-themes";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 export function Navbar() {
   const { toggleNotification } = useDashboard();
@@ -56,6 +58,9 @@ export function Navbar() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   const displayName = currentUser?.fullName || "User";
   const displayRole = currentUser?.role
     ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
@@ -69,20 +74,23 @@ export function Navbar() {
 
   return (
     <nav className="flex items-center justify-between py-2 px-6 border-b border-border/40 bg-background/50 backdrop-blur-sm relative z-50">
-      {/* Brand Section */}
+      {/* Search Section */}
       <div className="flex items-center gap-3">
-        <div className="flex flex-col leading-tight">
-          <div className="flex items-center gap-2">
-            <span className="text-md font-black tracking-[-0.02em] text-foreground">
-              BRANA
-            </span>
-
-            <span className="text-[12px] font-light tracking-[0.4em] text-muted-foreground uppercase">
-              Films
-            </span>
-          </div>{" "}
-          <span className="text-[10px] font-light tracking-[0.02em] text-muted-foreground">
-            Studio Management v1.2
+        <div className="group flex items-center gap-2 px-3 h-9 rounded-lg bg-muted/50 border border-border/60 focus-within:border-primary/50 transition-colors w-80">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search everything..."
+            className="flex-1 min-w-0 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+          />
+          <span className="flex items-center gap-1 shrink-0">
+            <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+              ⌘
+            </kbd>
+            <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+              K
+            </kbd>
           </span>
         </div>
       </div>
@@ -213,30 +221,9 @@ export function Navbar() {
                 </DropdownMenuItem>
 
                 {/* Dark/Light mode toggle item */}
-                <DropdownMenuItem
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg cursor-pointer text-muted-foreground hover:text-foreground transition-colors hover:bg-muted/60 dark:hover:bg-zinc-800/40 select-none"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setTheme(theme === "dark" ? "light" : "dark");
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    {theme === "dark" ? (
-                      <>
-                        <Sun className="h-4 w-4 shrink-0 text-yellow-500 animate-spin-slow" />
-                        <span className="text-[12px] font-medium text-yellow-500 dark:text-yellow-400">Light mode</span>
-                      </>
-                    ) : (
-                      <>
-                        <Moon className="h-4 w-4 shrink-0 text-indigo-500" />
-                        <span className="text-[12px] font-medium text-indigo-600 dark:text-indigo-400">Dark mode</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-black bg-muted px-1.5 py-0.5 rounded">
-                    Toggle
-                  </span>
-                </DropdownMenuItem>
+                <div className="px-3 py-2">
+                  <ThemeSwitch theme={theme} setTheme={setTheme} isExpanded={true} />
+                </div>
 
                 <DropdownMenuItem
                   onClick={() => setActivePopup("profile")}

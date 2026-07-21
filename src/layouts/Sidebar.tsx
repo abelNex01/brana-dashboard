@@ -8,8 +8,8 @@ import {
   Wallet,
   MessageSquare,
   Search,
-  ChevronUp,
   ChevronDown,
+  Command,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDashboard } from "@/hooks/use-dashboard";
-import { useAuth } from "@/contexts/AuthContext";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -30,163 +30,111 @@ interface SidebarItem {
   badge?: number;
 }
 
-/* ------------------------------------------------------------------ */
-/* Data — preserved from the original component                        */
-/* ------------------------------------------------------------------ */
-
 const mainItems: SidebarItem[] = [
   { icon: LayoutGrid, label: "Overview", id: "dashboard", href: "/" },
-  {
-    icon: Calendar,
-    label: "Schedule",
-    id: "schedule",
-    href: "/dashboard/schedule",
-  },
+  { icon: Calendar, label: "Schedule", id: "schedule", href: "/dashboard/schedule" },
   { icon: Cog, label: "Gear", id: "analytics", href: "/dashboard/gears" },
   { icon: Wallet, label: "Wallet", id: "wallet", href: "/dashboard/wallet" },
   { icon: Users, label: "Team", id: "community", href: "/dashboard/team", badge: 12 },
-  {
-    icon: MessageSquare,
-    label: "Chat",
-    id: "messages",
-    href: "/dashboard/messages",
-  },
+  { icon: MessageSquare, label: "Chat", id: "messages", href: "/dashboard/messages" },
 ];
-
-/* ------------------------------------------------------------------ */
-/* Sidebar                                                             */
-/* ------------------------------------------------------------------ */
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isSidebarExpanded, toggleSidebar } = useDashboard();
-  const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isActive = (item: SidebarItem) => {
-    if (item.href) return location === item.href;
-    return false;
-  };
-
+  const isActive = (item: SidebarItem) => Boolean(item.href && location === item.href);
   const filterItems = (items: SidebarItem[]) =>
     searchQuery.trim()
-      ? items.filter((i) =>
-          i.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+      ? items.filter((item) =>
+          item.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
         )
       : items;
 
   return (
     <aside
-      className={`${
-        isSidebarExpanded ? "w-56" : "w-16"
-      } shrink-0 bg-sidebar border-r border-border flex flex-col transition-all duration-300 ease-in-out`}
+      className={`relative flex h-dvh shrink-0 flex-col overflow-hidden border-r border-white/[0.055] bg-[#191919] text-[#a1a1a1] shadow-[12px_0_35px_rgba(0,0,0,0.12)] transition-[width] duration-300 ease-out ${
+        isSidebarExpanded ? "w-[254px]" : "w-[68px]"
+      }`}
     >
-      {/* ---------- Header: logo + collapse toggle ---------- */}
-      <div className="px-4 pt-5 pb-4">
-        <div
-          className={`flex ${
-            isSidebarExpanded
-              ? "items-center justify-between"
-              : "flex-col items-center gap-3"
-          }`}
-        >
+      {isSidebarExpanded && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+      )}
+
+      <header className={`pt-5 shrink-0 ${isSidebarExpanded ? "px-4" : "px-2"}`}>
+        <div className={`flex ${isSidebarExpanded ? "items-center justify-between" : "flex-col items-center gap-3"}`}>
           <button
             onClick={() => setLocation("/")}
-            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            className="group flex min-w-0 items-center gap-3 rounded-xl text-left outline-none transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-white/30"
+            aria-label="Go to overview"
           >
-            <img src="/favicon.svg" alt="Logo" className="h-6 w-6" />
-            
-          </button>
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-lg border border-sidebar-border text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-            aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            {isSidebarExpanded ? (
-              <PanelLeftClose className="w-3.5 h-3.5" />
-            ) : (
-              <PanelLeftOpen className="w-3.5 h-3.5" />
+            <div className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-sm transition-all duration-300 group-hover:border-white/20 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.07)]">
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <img src="/favicon.svg" alt="" className="relative z-10 size-5 opacity-90 transition-transform duration-500 ease-out group-hover:scale-110" />
+            </div>
+            {isSidebarExpanded && (
+              <div className="flex flex-col min-w-0 justify-center">
+                <span className="truncate text-[16px] font-bold tracking-[0.03em] bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent transition-all duration-300">
+                  BRANA
+                </span>
+                <span className="truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40 transition-colors duration-300 group-hover:text-white/60">
+                  FILMS
+                </span>
+              </div>
             )}
           </button>
-        </div>
-      </div>
 
-      {/* ---------- Search ---------- */}
-      <div className={`${isSidebarExpanded ? "px-4" : "px-3"} pb-2`}>
-        {isSidebarExpanded ? (
-          <div className="group flex items-center gap-2 px-2.5 h-9 rounded-lg bg-sidebar-accent border border-sidebar-border focus-within:border-sidebar-primary transition-colors">
-            <Search className="w-3.5 h-3.5 text-sidebar-foreground shrink-0" />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleSidebar}
+              className="grid size-7 place-items-center rounded-md text-[#838383] transition-colors hover:bg-white/[0.07] hover:text-[#ededed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {isSidebarExpanded ? <PanelLeftClose className="size-4" strokeWidth={1.7} /> : <PanelLeftOpen className="size-4" strokeWidth={1.7} />}
+            </button>
+          </div>
+        </div>
+
+        {isSidebarExpanded && (
+          <label className="relative mt-5 flex h-9 items-center rounded-lg border border-white/[0.045] bg-[#171717] text-[#707070] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors focus-within:border-white/[0.13] focus-within:text-[#b6b6b6]">
+            <Search className="ml-2.5 size-4 shrink-0" strokeWidth={1.65} />
             <input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="flex-1 min-w-0 bg-transparent text-xs text-foreground placeholder:text-sidebar-foreground outline-none"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search"
+              className="h-full min-w-0 flex-1 bg-transparent px-2 text-[13px] text-[#dedede] outline-none placeholder:text-[#696969]"
+              aria-label="Search navigation"
             />
-            <span className="flex items-center gap-1 shrink-0">
-              <kbd className="px-1 py-0.5 text-[9px] font-medium text-sidebar-foreground bg-sidebar-accent border border-sidebar-border rounded-md">
-                ⌘
-              </kbd>
-              <kbd className="px-1 py-0.5 text-[9px] font-medium text-sidebar-foreground bg-sidebar-accent border border-sidebar-border rounded-md">
-                F
-              </kbd>
+            <span className="mr-2 flex items-center gap-0.5 text-[10px] text-[#666]" aria-hidden="true">
+              <Command className="size-3" />K
             </span>
-          </div>
-        ) : (
-          <Tooltip delayDuration={200}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={toggleSidebar}
-                className="w-full flex items-center justify-center h-10 rounded-xl bg-sidebar-accent border border-sidebar-border text-sidebar-foreground hover:text-foreground transition-colors"
-                aria-label="Search"
-              >
-                <Search className="w-3.5 h-3.5 text-sidebar-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={12}>
-              <p>Search</p>
-            </TooltipContent>
-          </Tooltip>
+          </label>
         )}
-      </div>
+      </header>
 
-      {/* ---------- Main navigation ---------- */}
-      <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {filterItems(mainItems).map((item) => (
-          <SidebarButton
-            key={item.id}
-            item={item}
-            isActive={isActive(item)}
-            isExpanded={isSidebarExpanded}
-            onClick={() => {
-              if (item.href) setLocation(item.href);
-            }}
-          />
-        ))}
+      <nav className={`mt-7 flex-1 min-h-0 overflow-y-auto ${isSidebarExpanded ? "px-4" : "px-2"}`} aria-label="Main navigation">
+        {isSidebarExpanded && <p className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.02em] text-[#666]">Workspace</p>}
+        <div className="space-y-0.5">
+          {filterItems(mainItems).map((item) => (
+            <SidebarButton
+              key={item.id}
+              item={item}
+              isActive={isActive(item)}
+              isExpanded={isSidebarExpanded}
+              onClick={() => item.href && setLocation(item.href)}
+            />
+          ))}
+        </div>
+      </nav>
 
-      </div>
-
-
-      {/* ---------- Theme toggle (logic preserved, UI redesigned) ---------- */}
-      <div
-        className={`${
-          isSidebarExpanded ? "px-3" : "px-2"
-        } pb-3 flex items-center justify-center`}
-      >
-        <ThemeSwitch
-          theme={theme}
-          setTheme={setTheme}
-          isExpanded={isSidebarExpanded}
-        />
-      </div>
-
+      <footer className={`mt-auto border-t border-white/[0.045] pt-4 pb-6 shrink-0 flex justify-center ${isSidebarExpanded ? "mx-4 justify-start" : "mx-2"}`}>
+        <ThemeSwitch theme={theme} setTheme={setTheme} isExpanded={isSidebarExpanded} />
+      </footer>
     </aside>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Nav button — glowing indigo active pill like the reference          */
-/* ------------------------------------------------------------------ */
 
 const SidebarButton = memo(function SidebarButton({
   item,
@@ -200,147 +148,32 @@ const SidebarButton = memo(function SidebarButton({
   onClick: () => void;
 }) {
   const Icon = item.icon;
-
-  const ButtonContent = (
+  const button = (
     <button
       id={`sidebar-btn-${item.id}`}
       onClick={onClick}
-      className={`relative w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-all duration-200 ${
+      className={`group relative flex h-11 w-full items-center rounded-lg text-left outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-white/30 ${
+        isExpanded ? "gap-3 px-3" : "justify-center"
+      } ${
         isActive
-          ? "bg-gradient-to-r from-sidebar-accent via-sidebar-accent to-sidebar-primary/60 text-sidebar-primary-foreground shadow-[inset_0_1px_0_rgba(0,0,0,0.08)]"
-          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
-      } ${isExpanded ? "" : "justify-center"}`}
+          ? "bg-white/[0.065] text-[#f2f2f2] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]"
+          : "text-[#969696] hover:bg-white/[0.045] hover:text-[#dedede]"
+      }`}
       aria-label={item.label}
+      aria-current={isActive ? "page" : undefined}
     >
-      {/* Right-edge glow bar on the active item */}
-      {isActive && (
-        <span className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary-rgb),0.9)]" />
-      )}
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      {isExpanded && (
-        <span className="flex-1 text-xs font-medium text-left truncate">
-          {item.label}
-        </span>
-      )}
-      {isExpanded && item.badge && (
-        <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary/300 border border-primary/30 rounded-full">
-          {item.badge}
-        </span>
-      )}
-      {/* Collapsed badge dot */}
-      {!isExpanded && item.badge && (
-        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.9)]" />
-      )}
+      <Icon className="size-[18px] shrink-0" strokeWidth={isActive ? 2 : 1.65} />
+      {isExpanded && <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-[-0.01em]">{item.label}</span>}
+      {isExpanded && item.badge ? <span className="rounded-full bg-white/[0.09] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[#d3d3d3]">{item.badge}</span> : null}
+      {!isExpanded && item.badge ? <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-[#f0f0f0]" /> : null}
     </button>
   );
 
-  if (isExpanded) {
-    return ButtonContent;
-  }
-
+  if (isExpanded) return button;
   return (
     <Tooltip delayDuration={200}>
-      <TooltipTrigger asChild>{ButtonContent}</TooltipTrigger>
-      <TooltipContent side="right" sideOffset={12}>
-        <p>{item.label}</p>
-      </TooltipContent>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={12}><p>{item.label}</p></TooltipContent>
     </Tooltip>
-  );
-});
-
-/* ------------------------------------------------------------------ */
-/* Theme switch — premium neumorphic capsule toggle                    */
-/* Visual only: reads `theme` / calls `setTheme` exactly like the      */
-/* two-button picker it replaces, so next-themes wiring is untouched.  */
-/* ------------------------------------------------------------------ */
-
-const ThemeSwitch = memo(function ThemeSwitch({
-  theme,
-  setTheme,
-  isExpanded,
-}: {
-  theme: string | undefined;
-  setTheme: (theme: string) => void;
-  isExpanded: boolean;
-}) {
-  const isDark = theme === "dark";
-
-  // Same proportions (thumb ≈ 87% of track height, identical shadow
-  // stack) at two calibrated sizes, so the switch reads correctly in
-  // both the expanded and collapsed rail.
-  const size = isExpanded
-    ? { w: 56, h: 28, pad: 2, thumb: 24, icon: 11 }
-    : { w: 44, h: 24, pad: 1.5, thumb: 21, icon: 9 };
-  const travel = size.w - size.thumb - size.pad * 2;
-
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={isDark}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="group relative shrink-0 rounded-full transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar"
-      style={{
-        width: size.w,
-        height: size.h,
-        background: "linear-gradient(180deg, #202020 0%, #141414 100%)",
-        border: "1.5px solid #0a0a0a",
-        boxShadow: [
-          "0 8px 18px -4px rgba(0,0,0,0.55)", // outer shadow
-          "0 1px 0 rgba(255,255,255,0.04)", // outer bevel edge
-          "inset 0 1px 1px rgba(255,255,255,0.08)", // top highlight
-          "inset 0 -8px 12px rgba(0,0,0,0.6)", // inner shadow (recess)
-          "inset 0 2px 4px rgba(0,0,0,0.35)", // inner shadow (top)
-          "0 0 22px rgba(255,255,255,0.035)", // soft ambient glow
-        ].join(", "),
-      }}
-    >
-      {/* glass sheen across the top of the track */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-[3px] top-[2px] h-1/2 rounded-full bg-white/[0.05] backdrop-blur-sm"
-      />
-
-      {/* track icons — each sits in the space the thumb isn't covering */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-between"
-        style={{ padding: `0 ${size.pad + 5}px` }}
-      >
-        <span
-          className={`rounded-full border-[1.5px] border-white transition-all duration-300 ease-out ${
-            isDark ? "scale-100 opacity-100" : "scale-50 opacity-0"
-          }`}
-          style={{ width: size.icon, height: size.icon }}
-        />
-        <span
-          className={`rounded-full bg-white/25 transition-all duration-300 ease-out ${
-            isDark ? "scale-50 opacity-0" : "scale-100 opacity-100"
-          }`}
-          style={{ width: size.icon, height: 2 }}
-        />
-      </span>
-
-      {/* thumb */}
-      <span
-        aria-hidden
-        className="absolute top-1/2 z-10 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.34,1.25,0.64,1)]"
-        style={{
-          left: size.pad,
-          width: size.thumb,
-          height: size.thumb,
-          transform: `translateY(-50%) translateX(${isDark ? travel : 0}px)`,
-          background:
-            "radial-gradient(circle at 32% 26%, #4d4d4d 0%, #262626 55%, #161616 100%)",
-          boxShadow: [
-            "0 3px 6px rgba(0,0,0,0.55)", // elevation
-            "inset 0 1px 0 rgba(255,255,255,0.1)", // top highlight
-            "inset 0 -4px 6px rgba(0,0,0,0.45)", // inner shadow
-            "0 0 0 1px rgba(0,0,0,0.4)", // edge definition
-          ].join(", "),
-        }}
-      />
-    </button>
   );
 });

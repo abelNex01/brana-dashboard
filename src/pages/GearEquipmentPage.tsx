@@ -471,14 +471,24 @@ export default function GearEquipmentPage() {
       <div className="flex items-center justify-between gap-4 mb-2 z-10 relative">
         {/* Search */}
         <div className="relative flex-1 max-w-2xl">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search for gear, category, serial..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-14 pl-12 pr-6 rounded-full text-[14px] glass-input outline-none"
-          />
+          <div className="group flex items-center gap-2 px-4 h-12 rounded-lg bg-muted/50 border border-border/60 focus-within:border-primary/50 transition-colors w-full">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              placeholder="Search for gear, category, serial..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            />
+            <span className="flex items-center gap-1 shrink-0">
+              <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+                ⌘
+              </kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
+                F
+              </kbd>
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

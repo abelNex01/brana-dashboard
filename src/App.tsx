@@ -142,6 +142,7 @@ function AppProviders({ children }: { children: React.ReactNode }) {
     <ThemeProvider
       attribute="class"
       defaultTheme="light"
+      storageKey="brana-theme-preference"
       disableTransitionOnChange
       enableSystem={false}
     >
