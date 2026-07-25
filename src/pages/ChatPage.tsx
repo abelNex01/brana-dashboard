@@ -10,6 +10,7 @@
  */
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import {
   Send,
   MoreVertical,
@@ -273,7 +274,7 @@ const SEED_CONVERSATIONS: Conversation[] = [
 function Avatar({ name, src, size = "md", className }: { name: string; src?: string; size?: AvatarSize, className?: string }) {
   const dims = size === "lg" ? "w-12 h-12 text-lg" : size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
   return (
-    <div className={cn("relative flex-shrink-0 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center font-medium text-white", dims, className)}>
+    <div className={cn("relative flex-shrink-0 rounded-full overflow-hidden bg-zinc-800 dark:bg-zinc-800 flex items-center justify-center font-medium text-white", dims, className)}>
       {src ? <img src={src} alt={name} className="w-full h-full object-cover" /> : <span>{name.charAt(0).toUpperCase()}</span>}
     </div>
   );
@@ -290,30 +291,30 @@ function MessageBubble({ message, isCurrentUser }: { message: ChatMessage; isCur
       <div className={cn(
         "p-5 rounded-2xl w-full max-w-2xl text-left border",
         isCurrentUser 
-          ? "bg-[#1A1A1C] border-transparent ml-auto" 
-          : "bg-[#0C0C0E] border-white/[0.05] mr-auto"
+          ? "bg-muted dark:bg-[#1A1A1C] border-transparent ml-auto" 
+          : "bg-card dark:bg-[#0C0C0E] border-border dark:border-white/[0.05] mr-auto"
       )}>
         <div className="flex items-center gap-3 mb-4">
           <Avatar name={message.senderName} src={message.senderAvatar} size="sm" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-zinc-200 truncate">
+              <p className="text-sm font-medium text-foreground dark:text-zinc-200 truncate">
                 {isCurrentUser ? `From: support@cloudcontent.com` : message.senderName}
               </p>
-              <button className="text-zinc-500 hover:text-zinc-300">
+              <button className="text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300">
                 <MoreVertical className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-500 truncate">To: {isCurrentUser ? "Leyton Graves" : "Support Team"}</p>
+            <p className="text-xs text-muted-foreground dark:text-zinc-500 truncate">To: {isCurrentUser ? "Leyton Graves" : "Support Team"}</p>
           </div>
         </div>
         
-        <div className="text-[13px] leading-relaxed text-zinc-300 whitespace-pre-wrap font-light">
+        <div className="text-[13px] leading-relaxed text-foreground dark:text-zinc-300 whitespace-pre-wrap font-light">
           {message.content}
         </div>
         
         {message.attachment?.type === "voice" && (
-           <div className="flex items-center gap-3 mt-4 bg-[#141417] rounded-xl p-2 w-max border border-white/[0.04]">
+           <div className="flex items-center gap-3 mt-4 bg-muted dark:bg-[#141417] rounded-xl p-2 w-max border border-border dark:border-white/[0.04]">
              <button type="button" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                <Play className="w-3 h-3 text-white fill-current ml-0.5" />
              </button>
@@ -322,7 +323,7 @@ function MessageBubble({ message, isCurrentUser }: { message: ChatMessage; isCur
                  <span key={i} className="w-[3px] rounded-full bg-indigo-500 opacity-80" style={{ height: `${h}%` }} />
                ))}
              </div>
-             <span className="text-[11px] text-zinc-500 pr-2">{message.attachment.duration}</span>
+             <span className="text-[11px] text-muted-foreground dark:text-zinc-500 pr-2">{message.attachment.duration}</span>
            </div>
         )}
       </div>
@@ -345,24 +346,24 @@ function ConversationListItem({ conversation, lastMessage, isActive, onClick }: 
       className={cn(
         "w-full flex flex-col p-4 rounded-2xl text-left transition-all relative overflow-hidden mb-2 group",
         isActive
-          ? "bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 shadow-lg border-transparent"
-          : "bg-[#141416] hover:bg-[#1A1A1D] border border-white/[0.04]"
+          ? "bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 shadow-lg border-transparent dark:bg-gradient-to-br dark:from-gray-700 dark:via-gray-800 dark:to-gray-900"
+          : "bg-muted dark:bg-[#141416] hover:bg-accent dark:hover:bg-[#1A1A1D] border border-border dark:border-white/[0.04]"
       )}
     >
       <div className="flex items-start justify-between w-full mb-3">
         <div className="flex items-center gap-3">
           <Avatar name={conversation.title} src={conversation.participants[0]?.avatar} size="sm" className="ring-2 ring-black/20" />
-          <p className={cn("text-sm font-semibold truncate", isActive ? "text-white" : "text-zinc-200")}>
+          <p className={cn("text-sm font-semibold truncate", isActive ? "text-white" : "text-foreground dark:text-zinc-200")}>
             {conversation.title}
           </p>
         </div>
-        <span className={cn("text-[10px] uppercase font-semibold tracking-wider", isActive ? "text-white/80" : "text-zinc-500")}>
+        <span className={cn("text-[10px] uppercase font-semibold tracking-wider", isActive ? "text-white/80" : "text-muted-foreground dark:text-zinc-500")}>
           {lastMessage ? formatListTime(lastMessage.timestamp) : "NEW"}
         </span>
       </div>
 
       <div className="flex items-end justify-between w-full gap-2">
-        <p className={cn("text-[13px] truncate flex-1 font-light", isActive ? "text-white/90" : "text-zinc-400")}>
+        <p className={cn("text-[13px] truncate flex-1 font-light", isActive ? "text-white/90" : "text-muted-foreground dark:text-zinc-400")}>
           {conversation.isTyping ? "Typing..." : (lastMessage?.content || "No messages yet")}
         </p>
         
@@ -389,7 +390,7 @@ function ConversationListItem({ conversation, lastMessage, isActive, onClick }: 
             <span className="w-3 h-3 rounded-full bg-purple-500/50 flex items-center justify-center"><Hash className="w-2 h-2 text-white" /></span>
             Drafts
           </span>
-          <span className="text-[11px] text-zinc-600 truncate">Hi {conversation.title.split(' ')[0]}, happy to help!</span>
+          <span className="text-[11px] text-muted-foreground dark:text-zinc-600 truncate">Hi {conversation.title.split(' ')[0]}, happy to help!</span>
         </div>
       )}
     </motion.button>
@@ -401,13 +402,13 @@ function InfoPanel({ conversation }: { conversation: Conversation }) {
     <motion.aside
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="hidden xl:flex w-[320px] flex-col overflow-y-auto bg-[#0A0A0C] border-l border-white/[0.04] p-5"
+      className="hidden xl:flex w-[320px] flex-col overflow-y-auto bg-card dark:bg-[#0A0A0C] border-l border-border dark:border-white/[0.04] p-5"
     >
       <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" className="h-8 bg-[#141416] border border-white/[0.04] text-zinc-300 text-xs px-3 rounded-lg hover:bg-white/[0.04]">
+        <Button variant="ghost" className="h-8 bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] text-foreground dark:text-zinc-300 text-xs px-3 rounded-lg hover:bg-accent dark:hover:bg-white/[0.04]">
           Salesforce <ChevronDown className="w-3 h-3 ml-2" />
         </Button>
-        <button className="w-8 h-8 rounded-lg bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white">
+        <button className="w-8 h-8 rounded-lg bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -416,29 +417,29 @@ function InfoPanel({ conversation }: { conversation: Conversation }) {
         <Button className="flex-1 bg-white text-black hover:bg-zinc-200 text-[11px] h-8 rounded-lg font-semibold">
           <FileText className="w-3 h-3 mr-1.5" /> Add Task
         </Button>
-        <Button className="flex-1 bg-[#141416] border border-white/[0.04] text-zinc-300 hover:bg-white/[0.04] text-[11px] h-8 rounded-lg font-semibold">
+        <Button className="flex-1 bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] text-foreground dark:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] text-[11px] h-8 rounded-lg font-semibold">
           <FileText className="w-3 h-3 mr-1.5" /> Add Note
         </Button>
       </div>
 
       <div className="space-y-4 flex-1">
         <div>
-          <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Subject</label>
-          <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
-            Schedule app training <ChevronDown className="w-3 h-3 text-zinc-600" />
+          <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Subject</label>
+          <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
+            Schedule app training <ChevronDown className="w-3 h-3 text-muted-foreground dark:text-zinc-600" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Date Only</label>
-            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Date Only</label>
+            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
               12/29 <ChevronDown className="w-3 h-3 text-zinc-600" />
             </div>
           </div>
           <div>
-            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Status <span className="text-red-500">*</span></label>
-            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Status <span className="text-red-500">*</span></label>
+            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
               Open <ChevronDown className="w-3 h-3 text-zinc-600" />
             </div>
           </div>
@@ -446,14 +447,14 @@ function InfoPanel({ conversation }: { conversation: Conversation }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Priority <span className="text-red-500">*</span></label>
-            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Priority <span className="text-red-500">*</span></label>
+            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
               Normal <ChevronDown className="w-3 h-3 text-zinc-600" />
             </div>
           </div>
           <div>
-            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Assigned to ID <span className="text-red-500">*</span></label>
-            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Assigned to ID <span className="text-red-500">*</span></label>
+            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
               Steve Hackney <ChevronDown className="w-3 h-3 text-zinc-600" />
             </div>
           </div>
@@ -461,13 +462,13 @@ function InfoPanel({ conversation }: { conversation: Conversation }) {
 
         <div>
           <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Description</label>
-          <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-3 text-[13px] text-zinc-400 min-h-[140px] relative">
+          <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-3 text-[13px] text-muted-foreground dark:text-zinc-400 min-h-[140px] relative">
             Questions about cooperation, you will need to fill out a document |
             <div className="absolute bottom-3 left-3 flex gap-2">
-              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><FileText className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><Paperclip className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><Smile className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><MoreVertical className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><FileText className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><Paperclip className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><Smile className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><MoreVertical className="w-3.5 h-3.5" /></button>
             </div>
           </div>
         </div>
@@ -575,71 +576,27 @@ export default function ChatPage() {
     inputRef.current?.focus();
   };
 
+  const { theme } = useTheme();
+
   return (
-    <div className="flex h-screen w-full bg-[#050505] text-zinc-300 font-sans overflow-hidden selection:bg-fuchsia-500/30">
+    <div className="flex h-screen w-full bg-background dark:bg-[#050505] text-foreground dark:text-zinc-300 font-sans overflow-hidden selection:bg-fuchsia-500/30">
       
-      {/* Far Left Navigation Rail (Mock matching) */}
-      <nav className="w-[72px] hidden md:flex flex-col items-center py-6 border-r border-white/[0.04] bg-[#0A0A0C] flex-shrink-0 z-10 relative">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 mb-8 p-0.5">
-          <img src="https://i.pravatar.cc/150?u=me" alt="User" className="w-full h-full object-cover rounded-[10px]" />
-        </div>
-
-        <div className="flex flex-col gap-4 w-full px-3">
-          <button className="w-full aspect-square rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-gray-400 shadow-sm relative group transition-colors hover:bg-white/[0.04]">
-            <Inbox className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-gray-500" />
-          </button>
-          
-          <div className="w-full h-[1px] bg-white/[0.04] my-2" />
-
-          {[
-            { icon: Users, label: "Assigned" },
-            { icon: FileText, label: "Shared" },
-            { icon: Inbox, label: "All" },
-            { icon: FileText, label: "Drafts" },
-            { icon: SendIcon, label: "Sent" },
-            { icon: Trash, label: "Trash" },
-            { icon: MoreVertical, label: "More" },
-          ].map((item, i) => (
-            <button key={i} className="w-full aspect-square rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors relative group">
-              <item.icon className="w-5 h-5" />
-            </button>
-          ))}
-        </div>
-        
-        <div className="mt-auto flex flex-col gap-4 w-full px-3">
-           <div className="w-full h-[1px] bg-white/[0.04] mb-2" />
-           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
-              <span className="w-5 h-5 rounded bg-gradient-to-br from-gray-600 to-gray-800 text-[10px] font-bold text-white flex items-center justify-center mb-1">C</span>
-           </button>
-           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
-              <span className="w-5 h-5 rounded bg-gray-700 text-[10px] font-bold text-white flex items-center justify-center mb-1">T1</span>
-           </button>
-           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
-              <span className="w-5 h-5 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center mb-1">T2</span>
-           </button>
-           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
-              <span className="w-5 h-5 rounded bg-gray-600 text-[10px] font-bold text-white flex items-center justify-center mb-1">X</span>
-           </button>
-        </div>
-      </nav>
-
       {/* Inbox List Column */}
       <aside className={cn(
-        "w-full md:w-[320px] lg:w-[380px] bg-[#0A0A0C] border-r border-white/[0.04] flex flex-col flex-shrink-0 relative z-10",
+        "w-full md:w-[320px] lg:w-[380px] bg-card dark:bg-[#0A0A0C] border-r border-border dark:border-white/[0.04] flex flex-col flex-shrink-0 relative z-10",
         selectedConversationId ? "hidden md:flex" : "flex"
       )}>
         <div className="p-5 pt-8 flex-shrink-0">
           <div className="relative mb-5">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-11 pr-4 bg-[#141416] border border-white/[0.04] rounded-xl text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-white/10 transition-colors"
+              className="w-full h-11 pl-11 pr-4 bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl text-sm text-foreground dark:text-zinc-200 placeholder:text-muted-foreground dark:placeholder:text-zinc-500 focus:outline-none focus:border-border dark:focus:border-white/10 transition-colors"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded bg-white/[0.04] flex items-center justify-center text-zinc-400">
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded bg-accent dark:bg-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
           </div>
@@ -656,8 +613,8 @@ export default function ChatPage() {
                 className={cn(
                   "flex-1 py-2 text-[11px] font-semibold rounded-lg transition-colors border",
                   f.active 
-                    ? "bg-[#1C1C1F] border-white/10 text-white" 
-                    : "bg-transparent border-white/[0.04] text-zinc-500 hover:text-zinc-300"
+                    ? "bg-accent dark:bg-[#1C1C1F] border-border dark:border-white/10 text-foreground dark:text-white" 
+                    : "bg-transparent border-border dark:border-white/[0.04] text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"
                 )}
               >
                 {f.label}
@@ -683,7 +640,7 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <main className={cn(
-        "flex-1 flex flex-col min-w-0 bg-[#050505] relative",
+        "flex-1 flex flex-col min-w-0 bg-background dark:bg-[#050505] relative",
         selectedConversationId ? "flex" : "hidden md:flex"
       )}>
         {selectedConversation ? (
@@ -692,26 +649,26 @@ export default function ChatPage() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSelectedConversationId(null)}
-                  className="md:hidden w-10 h-10 rounded-xl bg-[#141416] flex items-center justify-center text-zinc-400"
+                  className="md:hidden w-10 h-10 rounded-xl bg-muted dark:bg-[#141416] flex items-center justify-center text-muted-foreground dark:text-zinc-400"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h1 className="text-3xl font-light text-white tracking-tight">
+                <h1 className="text-3xl font-light text-foreground dark:text-white tracking-tight">
                   Hello, help me with email ...
                 </h1>
               </div>
               
               <div className="flex items-center gap-2">
-                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                 <button className="w-9 h-9 rounded-xl bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white transition-colors">
                     <FileText className="w-4 h-4" />
                  </button>
-                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                 <button className="w-9 h-9 rounded-xl bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white transition-colors">
                     <Inbox className="w-4 h-4" />
                  </button>
-                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                 <button className="w-9 h-9 rounded-xl bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white transition-colors">
                     <Trash className="w-4 h-4" />
                  </button>
-                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                 <button className="w-9 h-9 rounded-xl bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white transition-colors">
                     <MoreVertical className="w-4 h-4" />
                  </button>
               </div>
@@ -737,15 +694,15 @@ export default function ChatPage() {
             <div className="p-6 pt-2 pb-8 flex-shrink-0 max-w-4xl w-full mx-auto">
               <form onSubmit={handleSendMessage} className="relative">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 to-transparent pointer-events-none -translate-y-full" />
-                <div className="bg-[#141416] border border-white/[0.06] rounded-2xl p-2 flex items-center gap-2 shadow-2xl relative z-10 backdrop-blur-xl">
+                <div className="bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.06] rounded-2xl p-2 flex items-center gap-2 shadow-2xl relative z-10 backdrop-blur-xl">
                   <div className="flex items-center gap-1 pl-2">
-                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                     <button type="button" className="w-8 h-8 rounded-lg text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] flex items-center justify-center transition-colors">
                         <Paperclip className="w-4 h-4" />
                      </button>
-                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                     <button type="button" className="w-8 h-8 rounded-lg text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] flex items-center justify-center transition-colors">
                         <FileText className="w-4 h-4" />
                      </button>
-                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                     <button type="button" className="w-8 h-8 rounded-lg text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] flex items-center justify-center transition-colors">
                         <Smile className="w-4 h-4" />
                      </button>
                   </div>
@@ -755,7 +712,7 @@ export default function ChatPage() {
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 bg-transparent border-none text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-0 shadow-none px-2 text-[15px]"
+                    className="flex-1 bg-transparent border-none text-foreground dark:text-zinc-200 placeholder:text-muted-foreground dark:placeholder:text-zinc-600 focus-visible:ring-0 shadow-none px-2 text-[15px]"
                   />
                   
                   <Button
@@ -772,11 +729,11 @@ export default function ChatPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-20 h-20 rounded-3xl bg-[#141416] border border-white/[0.04] flex items-center justify-center mx-auto mb-6">
-                <MessageSquare className="w-8 h-8 text-zinc-600" />
+              <div className="w-20 h-20 rounded-3xl bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-8 h-8 text-muted-foreground dark:text-zinc-600" />
               </div>
-              <h3 className="text-xl font-light text-zinc-300 mb-2">Select a conversation</h3>
-              <p className="text-zinc-500 text-sm max-w-[260px]">Choose an existing chat from the sidebar or start a new one.</p>
+              <h3 className="text-xl font-light text-foreground dark:text-zinc-300 mb-2">Select a conversation</h3>
+              <p className="text-muted-foreground dark:text-zinc-500 text-sm max-w-[260px]">Choose an existing chat from the sidebar or start a new one.</p>
             </div>
           </div>
         )}
@@ -793,10 +750,16 @@ export default function ChatPage() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(255, 255, 255, 0.05);
+          background-color: rgba(0, 0, 0, 0.1);
           border-radius: 20px;
         }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(255, 255, 255, 0.05);
+        }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(0, 0, 0, 0.2);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background-color: rgba(255, 255, 255, 0.1);
         }
       `}} />
