@@ -510,7 +510,7 @@ export default function AuthPage() {
                           <span>
                             I agree to the{" "}
                             <button type="button" className="auth-link-inline">
-                              Terms of Service
+                              Terms of Services
                             </button>{" "}
                             and{" "}
                             <button type="button" className="auth-link-inline">
