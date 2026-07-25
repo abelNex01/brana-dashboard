@@ -1,12 +1,21 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo, ReactNode } from "react";
+import { logger } from "@/utils/logger";
 import type { FinanceState, FinanceAction, DeletedItem } from "@/types/finance";
-import { loadFinanceState, saveFinanceState, subscribeToSync } from "@/services/financeService";
+import {
+  loadFinanceState,
+  saveFinanceState,
+  subscribeToSync,
+  createEmptyFinanceState,
+  flushFinanceStateSave,
+} from "@/services/financeService";
 import { generateNotifications } from "@/utils/financeCalculations";
 import { defaultFilters } from "@/utils/financeSeed";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface FinanceContextType {
   state: FinanceState;
   dispatch: React.Dispatch<FinanceAction>;
+  isFinanceReady: boolean;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -95,46 +104,6 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
         ),
       };
 
-    // ─── EDITOR PAYMENTS ─────────────────────────────────────
-    case "CREATE_EDITOR_PAYMENT":
-      return {
-        ...state,
-        editorPayments: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.editorPayments],
-      };
-    case "UPDATE_EDITOR_PAYMENT":
-      return {
-        ...state,
-        editorPayments: state.editorPayments.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_EDITOR_PAYMENT": {
-      const item = state.editorPayments.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        editorPayments: state.editorPayments.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "editorPayments", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_EDITOR_PAYMENT":
-      return {
-        ...state,
-        editorPayments: state.editorPayments.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "editorPayments" && (d.item as any).id === action.payload)
-        ),
-      };
-
     // ─── PAYROLL ─────────────────────────────────────────────
     case "CREATE_PAYROLL":
       return {
@@ -175,126 +144,6 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
         ),
       };
 
-    // ─── INVOICES ────────────────────────────────────────────
-    case "CREATE_INVOICE":
-      return {
-        ...state,
-        invoices: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.invoices],
-      };
-    case "UPDATE_INVOICE":
-      return {
-        ...state,
-        invoices: state.invoices.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_INVOICE": {
-      const item = state.invoices.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        invoices: state.invoices.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "invoices", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_INVOICE":
-      return {
-        ...state,
-        invoices: state.invoices.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "invoices" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── BUDGETS ─────────────────────────────────────────────
-    case "CREATE_BUDGET":
-      return {
-        ...state,
-        budgets: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.budgets],
-      };
-    case "UPDATE_BUDGET":
-      return {
-        ...state,
-        budgets: state.budgets.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_BUDGET": {
-      const item = state.budgets.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        budgets: state.budgets.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "budgets", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_BUDGET":
-      return {
-        ...state,
-        budgets: state.budgets.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "budgets" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── GEAR MAINTENANCE ────────────────────────────────────
-    case "CREATE_GEAR":
-      return {
-        ...state,
-        gearMaintenance: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.gearMaintenance],
-      };
-    case "UPDATE_GEAR":
-      return {
-        ...state,
-        gearMaintenance: state.gearMaintenance.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_GEAR": {
-      const item = state.gearMaintenance.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        gearMaintenance: state.gearMaintenance.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "gearMaintenance", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_GEAR":
-      return {
-        ...state,
-        gearMaintenance: state.gearMaintenance.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "gearMaintenance" && (d.item as any).id === action.payload)
-        ),
-      };
-
     // ─── SUBSCRIPTIONS ───────────────────────────────────────
     case "CREATE_SUBSCRIPTION":
       return {
@@ -332,166 +181,6 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
         ),
         deletedItems: state.deletedItems.filter(
           (d) => !(d.type === "subscriptions" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── TAX RECORDS ─────────────────────────────────────────
-    case "CREATE_TAX":
-      return {
-        ...state,
-        taxRecords: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.taxRecords],
-      };
-    case "UPDATE_TAX":
-      return {
-        ...state,
-        taxRecords: state.taxRecords.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_TAX": {
-      const item = state.taxRecords.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        taxRecords: state.taxRecords.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "taxRecords", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_TAX":
-      return {
-        ...state,
-        taxRecords: state.taxRecords.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "taxRecords" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── SAVINGS GOALS ───────────────────────────────────────
-    case "CREATE_SAVINGS_GOAL":
-      return {
-        ...state,
-        savingsGoals: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.savingsGoals],
-      };
-    case "UPDATE_SAVINGS_GOAL":
-      return {
-        ...state,
-        savingsGoals: state.savingsGoals.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_SAVINGS_GOAL": {
-      const item = state.savingsGoals.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        savingsGoals: state.savingsGoals.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "savingsGoals", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_SAVINGS_GOAL":
-      return {
-        ...state,
-        savingsGoals: state.savingsGoals.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "savingsGoals" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── FINANCIAL GOALS ─────────────────────────────────────
-    case "CREATE_FINANCIAL_GOAL":
-      return {
-        ...state,
-        financialGoals: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.financialGoals],
-      };
-    case "UPDATE_FINANCIAL_GOAL":
-      return {
-        ...state,
-        financialGoals: state.financialGoals.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_FINANCIAL_GOAL": {
-      const item = state.financialGoals.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        financialGoals: state.financialGoals.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "financialGoals", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_FINANCIAL_GOAL":
-      return {
-        ...state,
-        financialGoals: state.financialGoals.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "financialGoals" && (d.item as any).id === action.payload)
-        ),
-      };
-
-    // ─── ACCOUNTS PAYABLE ────────────────────────────────────
-    case "CREATE_AP":
-      return {
-        ...state,
-        accountsPayable: [{ ...action.payload, createdAt: nowStr(), updatedAt: nowStr() }, ...state.accountsPayable],
-      };
-    case "UPDATE_AP":
-      return {
-        ...state,
-        accountsPayable: state.accountsPayable.map((item) =>
-          item.id === action.payload.id
-            ? { ...item, ...action.payload.updates, updatedAt: nowStr() }
-            : item
-        ),
-      };
-    case "DELETE_AP": {
-      const item = state.accountsPayable.find((x) => x.id === action.payload);
-      if (!item) return state;
-      return {
-        ...state,
-        accountsPayable: state.accountsPayable.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: true, updatedAt: nowStr() } : x
-        ),
-        deletedItems: [
-          ...state.deletedItems,
-          { type: "accountsPayable", item: { ...item }, deletedAt: Date.now() },
-        ],
-      };
-    }
-    case "RESTORE_AP":
-      return {
-        ...state,
-        accountsPayable: state.accountsPayable.map((x) =>
-          x.id === action.payload ? { ...x, isDeleted: false, updatedAt: nowStr() } : x
-        ),
-        deletedItems: state.deletedItems.filter(
-          (d) => !(d.type === "accountsPayable" && (d.item as any).id === action.payload)
         ),
       };
 
@@ -590,10 +279,6 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
         isDeleted: false,
       };
 
-      if (entityType === "invoices" && "invoiceNumber" in duplicated) {
-        duplicated.invoiceNumber = `${duplicated.invoiceNumber}-DUP`;
-      }
-
       return {
         ...state,
         [targetKey]: [duplicated, ...(state[targetKey] as any[])],
@@ -612,42 +297,105 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
 }
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(financeReducer, null as any, () => {
-    return loadFinanceState();
-  });
+  const { isAuthenticated } = useAuth();
+  const [state, dispatch] = useReducer(financeReducer, createEmptyFinanceState());
+  const [isFinanceReady, setIsFinanceReady] = React.useState(false);
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    saveFinanceState(state);
-  }, [state]);
+  // Track whether the current state change is a hydration (load from DB) vs. a user action.
+  const isHydrating = React.useRef(false);
+  const lastSavedAt = React.useRef(0);
 
-  // Sync state between tabs
+  // Load or reset finance state when auth status changes
   useEffect(() => {
-    const unsubscribe = subscribeToSync((newState) => {
-      if (JSON.stringify(newState) !== JSON.stringify(state)) {
-        dispatch({ type: "HYDRATE", payload: newState });
-      }
+    let cancelled = false;
+
+    if (!isAuthenticated) {
+      isHydrating.current = true;
+      dispatch({ type: "HYDRATE", payload: createEmptyFinanceState() });
+      setIsFinanceReady(true);
+      return;
+    }
+
+    setIsFinanceReady(false);
+    isHydrating.current = true;
+
+    loadFinanceState().then((initialState) => {
+      if (cancelled) return;
+      dispatch({ type: "HYDRATE", payload: initialState });
+      setIsFinanceReady(true);
     });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  // Save state to Supabase whenever it changes — but skip hydration writes
+  useEffect(() => {
+    if (!isAuthenticated || !isFinanceReady) return;
+
+    if (isHydrating.current) {
+      isHydrating.current = false;
+      return;
+    }
+
+    lastSavedAt.current = Date.now();
+    saveFinanceState(state).catch((err) =>
+      logger.warn("Failed to save finance state", err),
+    );
+  }, [state, isAuthenticated, isFinanceReady]);
+
+  // Flush pending saves when the tab is hidden or closed
+  useEffect(() => {
+    const handleFlush = () => {
+      void flushFinanceStateSave();
+    };
+
+    window.addEventListener("pagehide", handleFlush);
+    window.addEventListener("beforeunload", handleFlush);
+
+    return () => {
+      window.removeEventListener("pagehide", handleFlush);
+      window.removeEventListener("beforeunload", handleFlush);
+    };
+  }, []);
+
+  // Sync state between tabs via custom event / realtime channel
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribe = subscribeToSync((newState) => {
+      // Ignore stale realtime events that arrive right after our own save
+      if (Date.now() - lastSavedAt.current < 1000) return;
+
+      isHydrating.current = true;
+      dispatch({ type: "HYDRATE", payload: newState });
+    });
+
     return unsubscribe;
-  }, [state]);
+  }, [isAuthenticated]);
 
   // Periodically check/generate background alerts/notifications based on state
   useEffect(() => {
-    if (!state) return;
+    if (!isFinanceReady) return;
+
     const computedNotifs = generateNotifications(state);
-    
-    // Check if we have new notifications that are not in the current state list
-    const existingNotifKeys = new Set(state.notifications.map(n => `${n.type}-${n.entityId}`));
-    const newNotifs = computedNotifs.filter(n => !existingNotifKeys.has(`${n.type}-${n.entityId}`));
-    
+    const existingNotifKeys = new Set(state.notifications.map((n) => `${n.type}-${n.entityId}`));
+    const newNotifs = computedNotifs.filter(
+      (n) => !existingNotifKeys.has(`${n.type}-${n.entityId}`),
+    );
+
     if (newNotifs.length > 0) {
-      newNotifs.forEach(notif => {
+      newNotifs.forEach((notif) => {
         dispatch({ type: "ADD_NOTIFICATION", payload: notif });
       });
     }
-  }, [state?.income, state?.expenses, state?.subscriptions, state?.payroll, state?.gearMaintenance]);
+  }, [isFinanceReady, state.income, state.expenses, state.subscriptions, state.payroll]);
 
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const value = useMemo(
+    () => ({ state, dispatch, isFinanceReady }),
+    [state, isFinanceReady],
+  );
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

@@ -2,6 +2,8 @@ import { useCallback } from "react";
 import { useFinanceContext } from "@/contexts/FinanceContext";
 import type { FilterCriteria, SortConfig } from "@/types/finance";
 import { parseISO, isWithinInterval } from "date-fns";
+import { logger } from "@/utils/logger";
+import type { JsonObject } from "@/types/common";
 
 export function useFinanceFilters() {
   const { state, dispatch } = useFinanceContext();
@@ -18,7 +20,7 @@ export function useFinanceFilters() {
   }, [dispatch]);
 
   const filterItems = useCallback(
-    <T extends Record<string, any>>(
+    <T extends Record<string, unknown>>(
       items: T[],
       sortConfig?: SortConfig
     ): T[] => {
@@ -31,13 +33,13 @@ export function useFinanceFilters() {
         const start = parseISO(filters.dateRange.start);
         const end = parseISO(filters.dateRange.end);
         result = result.filter((item) => {
-          const itemDateStr = item.date || item.issueDate || item.createdAt || item.paymentDate;
+          const itemDateStr = item.date as string || item.issueDate as string || item.createdAt as string || item.paymentDate as string;
           if (!itemDateStr) return true;
           try {
             const itemDate = parseISO(itemDateStr);
             return isWithinInterval(itemDate, { start, end });
           } catch (e) {
-            console.warn("Date interval parsing error:", e);
+            logger.warn("Date interval parsing error", e);
             return true;
           }
         });
@@ -46,58 +48,66 @@ export function useFinanceFilters() {
       // 2. Client Filter
       if (filters.client) {
         result = result.filter(
-          (item) =>
-            item.clientName &&
-            item.clientName.toLowerCase().includes(filters.client.toLowerCase())
+          (item) => {
+            const clientName = item.clientName as string;
+            return clientName && clientName.toLowerCase().includes(filters.client.toLowerCase());
+          }
         );
       }
 
       // 3. Category Filter
       if (filters.category) {
         result = result.filter(
-          (item) =>
-            item.category &&
-            item.category.toLowerCase() === filters.category.toLowerCase()
+          (item) => {
+            const category = item.category as string;
+            return category && category.toLowerCase() === filters.category.toLowerCase();
+          }
         );
       }
 
       // 4. Status Filter
       if (filters.status) {
         result = result.filter(
-          (item) =>
-            item.status &&
-            item.status.toLowerCase() === filters.status.toLowerCase()
+          (item) => {
+            const status = item.status as string;
+            return status && status.toLowerCase() === filters.status.toLowerCase();
+          }
         );
       }
 
       // 5. Payment Method Filter
       if (filters.paymentMethod) {
         result = result.filter(
-          (item) =>
-            item.paymentMethod &&
-            item.paymentMethod.toLowerCase() === filters.paymentMethod.toLowerCase()
+          (item) => {
+            const paymentMethod = item.paymentMethod as string;
+            return paymentMethod && paymentMethod.toLowerCase() === filters.paymentMethod.toLowerCase();
+          }
         );
       }
 
       // 6. Vendor Filter
       if (filters.vendor) {
         result = result.filter(
-          (item) =>
-            item.vendor &&
-            item.vendor.toLowerCase().includes(filters.vendor.toLowerCase())
+          (item) => {
+            const vendor = item.vendor as string;
+            return vendor && vendor.toLowerCase().includes(filters.vendor.toLowerCase());
+          }
         );
       }
 
       // 7. Project Filter
       if (filters.project) {
         result = result.filter(
-          (item) =>
-            (item.projectName &&
-              item.projectName.toLowerCase().includes(filters.project.toLowerCase())) ||
-            (item.project &&
-              item.project.toLowerCase().includes(filters.project.toLowerCase())) ||
-            (item.eventName &&
-              item.eventName.toLowerCase().includes(filters.project.toLowerCase()))
+          (item) => {
+            const projectName = item.projectName as string;
+            const project = item.project as string;
+            const eventName = item.eventName as string;
+            return (
+              (projectName && projectName.toLowerCase().includes(filters.project.toLowerCase())) ||
+              (project && project.toLowerCase().includes(filters.project.toLowerCase())) ||
+              (eventName && eventName.toLowerCase().includes(filters.project.toLowerCase()))
+            );
+          }
         );
       }
 
@@ -112,7 +122,7 @@ export function useFinanceFilters() {
               try {
                 return JSON.stringify(val).toLowerCase().includes(query);
               } catch (e) {
-                console.warn("JSON parsing error in search filter:", e);
+                logger.warn("JSON parsing error in search filter", e);
                 return false;
               }
             }

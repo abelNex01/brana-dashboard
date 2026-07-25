@@ -1,7 +1,7 @@
 /**
  * financeCalculations.ts
  * ─────────────────────────────────────────────────────────────
- * Pure calculation functions for all KPIs, analytics, and
+ * Pure calculation functions for active KPIs, analytics, and
  * financial metrics. No side effects — easily testable.
  * ─────────────────────────────────────────────────────────────
  */
@@ -9,15 +9,8 @@
 import type {
   IncomeTransaction,
   ExpenseRecord,
-  Invoice,
   PayrollEntry,
-  EditorPayment,
-  GearMaintenanceRecord,
   Subscription,
-  ProjectBudget,
-  AccountPayable,
-  TaxRecord,
-  DashboardKPIs,
   CashFlowSummary,
   CashFlowEntry,
   CashFlowPeriod,
@@ -25,10 +18,6 @@ import type {
   ChartDataPoint,
   FinanceNotification,
   FinanceState,
-  AccountsReceivableSummary,
-  BudgetHealth,
-  ReportData,
-  ReportPeriod,
 } from "@/types/finance";
 import { generateId } from "@/utils/formatters";
 import {
@@ -105,7 +94,6 @@ export function calculateNetProfit(income: IncomeTransaction[], expenses: Expens
 
 export function calculateGrossProfit(income: IncomeTransaction[], expenses: ExpenseRecord[]): number {
   const rev = calculateTotalRevenue(income);
-  // Gross profit excludes operating expenses (rent, utilities, internet, marketing)
   const operatingCategories = ["Rent", "Utilities", "InternetBills", "Marketing", "Advertising", "OfficeExpenses"];
   const directCosts = sumBy(
     active(expenses).filter((e) => !operatingCategories.includes(e.category)),
@@ -118,20 +106,6 @@ export function calculateProfitMargin(income: IncomeTransaction[], expenses: Exp
   const rev = calculateTotalRevenue(income);
   if (rev === 0) return 0;
   return (calculateNetProfit(income, expenses) / rev) * 100;
-}
-
-export function calculateAccountsReceivable(invoices: Invoice[]): number {
-  return sumBy(
-    active(invoices).filter((inv) => inv.status !== "Paid" && inv.status !== "Cancelled" && inv.status !== "Draft"),
-    "grandTotal"
-  );
-}
-
-export function calculateAccountsPayableTotal(ap: AccountPayable[]): number {
-  return sumBy(
-    active(ap).filter((item) => item.status !== "Paid"),
-    "amount"
-  );
 }
 
 export function calculateMonthlyGrowth(income: IncomeTransaction[]): number {
@@ -166,24 +140,10 @@ export function calculateAverageWeddingValue(income: IncomeTransaction[]): numbe
   return sumBy(weddingIncome, "amount") / weddingIncome.length;
 }
 
-export function calculateOutstandingInvoices(invoices: Invoice[]): { count: number; total: number } {
-  const outstanding = active(invoices).filter(
-    (inv) => inv.status !== "Paid" && inv.status !== "Cancelled" && inv.status !== "Draft"
-  );
-  return { count: outstanding.length, total: sumBy(outstanding, "grandTotal") };
-}
-
 export function calculatePayrollCost(payroll: PayrollEntry[]): number {
   return sumBy(
     active(payroll).filter((p) => p.status === "Paid"),
     "totalPay"
-  );
-}
-
-export function calculateGearMaintenanceCost(gear: GearMaintenanceRecord[]): number {
-  return active(gear).reduce(
-    (sum, g) => sum + g.totalRepairCost + g.totalMaintenanceCost,
-    0
   );
 }
 
@@ -192,39 +152,6 @@ export function calculateSubscriptionCost(subscriptions: Subscription[]): number
     active(subscriptions).filter((s) => s.status === "Active"),
     "monthlyAmount"
   );
-}
-
-// ─── DASHBOARD KPIs ──────────────────────────────────────────
-
-export function calculateDashboardKPIs(state: FinanceState): DashboardKPIs {
-  const totalRevenue = calculateTotalRevenue(state.income);
-  const totalExpenses = calculateTotalExpenses(state.expenses);
-  const netProfit = totalRevenue - totalExpenses;
-  const accountsReceivable = calculateAccountsReceivable(state.invoices);
-  const accountsPayable = calculateAccountsPayableTotal(state.accountsPayable);
-  const profitMargin = calculateProfitMargin(state.income, state.expenses);
-  const monthlyGrowth = calculateMonthlyGrowth(state.income);
-  const averageWeddingValue = calculateAverageWeddingValue(state.income);
-  const { count: outstandingInvoices } = calculateOutstandingInvoices(state.invoices);
-  const payrollCost = calculatePayrollCost(state.payroll);
-  const gearMaintenanceCost = calculateGearMaintenanceCost(state.gearMaintenance);
-  const subscriptionCost = calculateSubscriptionCost(state.subscriptions);
-
-  return {
-    totalRevenue,
-    totalExpenses,
-    netProfit,
-    accountsReceivable,
-    accountsPayable,
-    cashFlow: totalRevenue - totalExpenses - accountsPayable,
-    profitMargin,
-    monthlyGrowth,
-    averageWeddingValue,
-    outstandingInvoices,
-    payrollCost,
-    gearMaintenanceCost,
-    subscriptionCost,
-  };
 }
 
 // ─── CASH FLOW ───────────────────────────────────────────────
@@ -354,52 +281,6 @@ export function calculateProfitAnalytics(
   };
 }
 
-// ─── ACCOUNTS RECEIVABLE ─────────────────────────────────────
-
-export function calculateAccountsReceivableSummary(invoices: Invoice[]): AccountsReceivableSummary {
-  const activeInvoices = active(invoices);
-  const now = new Date();
-
-  const pendingInvoices = activeInvoices.filter(
-    (inv) => inv.status === "Sent" || inv.status === "Viewed"
-  );
-  const overdueInvoices = activeInvoices.filter(
-    (inv) => inv.status === "Overdue" || (inv.status !== "Paid" && inv.status !== "Cancelled" && inv.status !== "Draft" && isBefore(parseISO(inv.dueDate), now))
-  );
-
-  const totalOutstanding = sumBy(pendingInvoices, "grandTotal") + sumBy(overdueInvoices, "grandTotal");
-  const totalOverdue = sumBy(overdueInvoices, "grandTotal");
-
-  const averageDaysOverdue = overdueInvoices.length > 0
-    ? overdueInvoices.reduce((s, inv) => s + differenceInDays(now, parseISO(inv.dueDate)), 0) / overdueInvoices.length
-    : 0;
-
-  const totalInvoiced = sumBy(activeInvoices.filter((i) => i.status !== "Draft"), "grandTotal");
-  const totalPaid = sumBy(activeInvoices.filter((i) => i.status === "Paid"), "grandTotal");
-  const collectionProgress = totalInvoiced > 0 ? (totalPaid / totalInvoiced) * 100 : 0;
-
-  return {
-    pendingInvoices,
-    overdueInvoices,
-    totalOutstanding,
-    totalOverdue,
-    averageDaysOverdue,
-    collectionProgress,
-  };
-}
-
-// ─── BUDGET HEALTH ───────────────────────────────────────────
-
-export function calculateBudgetHealth(budget: ProjectBudget): BudgetHealth {
-  if (budget.actualCost > budget.expectedCost * 1.1 || budget.profit < 0) return "critical";
-  if (budget.actualCost > budget.expectedCost * 0.9 || budget.profitMargin < 20) return "warning";
-  return "healthy";
-}
-
-export function getRemainingBudget(budget: ProjectBudget): number {
-  return budget.expectedCost - budget.actualCost;
-}
-
 // ─── CHART DATA GENERATORS ──────────────────────────────────
 
 export function getRevenueTrends(income: IncomeTransaction[], period: CashFlowPeriod = "Monthly"): ChartDataPoint[] {
@@ -434,7 +315,6 @@ export function getRevenueComparisonData(income: IncomeTransaction[]): { day: st
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const paidIncome = active(income).filter((i) => i.status === "Paid" || i.status === "PartiallyPaid");
 
-  // Group by day of week, simulate YoY comparison from actual data
   const totalByDay: Record<string, number> = {};
   for (const i of paidIncome) {
     const dayIdx = parseISO(i.date).getDay();
@@ -444,7 +324,7 @@ export function getRevenueComparisonData(income: IncomeTransaction[]): { day: st
 
   return days.map((day) => ({
     day,
-    year2023: Math.round((totalByDay[day] || 800) * 0.65), // simulate prior year
+    year2023: Math.round((totalByDay[day] || 800) * 0.65),
     year2024: totalByDay[day] || 800,
   }));
 }
@@ -492,81 +372,12 @@ export function getSpendChartData(expenses: ExpenseRecord[]): { day: string; val
   }));
 }
 
-// ─── TAX CALCULATIONS ────────────────────────────────────────
-
-export function calculateTaxLiabilities(taxRecords: TaxRecord[]): {
-  totalOwed: number;
-  totalPaid: number;
-  totalPending: number;
-  byType: { type: string; amount: number }[];
-} {
-  const activeRecords = active(taxRecords);
-  const totalPaid = sumBy(activeRecords.filter((t) => t.status === "Paid"), "amount");
-  const totalPending = sumBy(activeRecords.filter((t) => t.status === "Pending"), "amount");
-
-  const byType = Object.entries(groupBy(activeRecords, (t) => t.type)).map(([type, items]) => ({
-    type,
-    amount: sumBy(items, "amount"),
-  }));
-
-  return {
-    totalOwed: totalPaid + totalPending,
-    totalPaid,
-    totalPending,
-    byType,
-  };
-}
-
-// ─── BUDGET AGGREGATES ───────────────────────────────────────
-
-export function calculateBudgetAllocation(budgets: ProjectBudget[]): {
-  totalExpected: number;
-  totalActualCost: number;
-  totalActualRevenue: number;
-  usagePercent: number;
-  weddingBudgetSpent: number;
-  weddingBudgetTotal: number;
-  gearBudgetSpent: number;
-  gearBudgetTotal: number;
-} {
-  const activeBudgets = active(budgets);
-  const totalExpected = sumBy(activeBudgets, "expectedCost");
-  const totalActualCost = sumBy(activeBudgets, "actualCost");
-  const totalActualRevenue = sumBy(activeBudgets, "actualRevenue");
-
-  // Split: first budget is "wedding", rest is "gear/operations" for demo
-  const weddingBudgets = activeBudgets.slice(0, Math.ceil(activeBudgets.length / 2));
-  const gearBudgets = activeBudgets.slice(Math.ceil(activeBudgets.length / 2));
-
-  return {
-    totalExpected,
-    totalActualCost,
-    totalActualRevenue,
-    usagePercent: totalExpected > 0 ? (totalActualCost / totalExpected) * 100 : 0,
-    weddingBudgetSpent: sumBy(weddingBudgets, "actualCost"),
-    weddingBudgetTotal: sumBy(weddingBudgets, "expectedCost"),
-    gearBudgetSpent: sumBy(gearBudgets, "actualCost"),
-    gearBudgetTotal: sumBy(gearBudgets, "expectedCost"),
-  };
-}
-
 // ─── NOTIFICATION GENERATION ─────────────────────────────────
 
 export function generateNotifications(state: FinanceState): FinanceNotification[] {
   const notifications: FinanceNotification[] = [];
   const now = new Date();
   const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  // Overdue invoices
-  for (const inv of active(state.invoices)) {
-    if (inv.status === "Overdue" || (inv.status !== "Paid" && inv.status !== "Cancelled" && inv.status !== "Draft" && isBefore(parseISO(inv.dueDate), now))) {
-      notifications.push({
-        id: generateId("notif"), type: "OverdueInvoice", title: "Overdue Invoice",
-        message: `Invoice ${inv.invoiceNumber} for ${inv.clientName} is overdue (${differenceInDays(now, parseISO(inv.dueDate))} days)`,
-        severity: "error", date: now.toISOString(), read: false, actionUrl: "", entityId: inv.id, entityType: "invoice",
-      });
-    }
-  }
 
   // Upcoming subscription renewals (within 7 days)
   for (const sub of active(state.subscriptions)) {
@@ -590,17 +401,6 @@ export function generateNotifications(state: FinanceState): FinanceNotification[
     }
   }
 
-  // Gear maintenance due
-  for (const gear of active(state.gearMaintenance)) {
-    if (gear.nextServiceDate && isBefore(parseISO(gear.nextServiceDate), in7days)) {
-      notifications.push({
-        id: generateId("notif"), type: "MaintenanceReminder", title: "Maintenance Due",
-        message: `${gear.name} needs servicing (due ${format(parseISO(gear.nextServiceDate), "MMM d, yyyy")})`,
-        severity: "warning", date: now.toISOString(), read: false, actionUrl: "", entityId: gear.id, entityType: "gear",
-      });
-    }
-  }
-
   // Low cash warning
   const cashFlow = calculateTotalRevenue(state.income) - calculateTotalExpenses(state.expenses);
   const monthlyExpenses = calculateTotalExpenses(state.expenses) / 6; // rough monthly avg
@@ -613,34 +413,4 @@ export function generateNotifications(state: FinanceState): FinanceNotification[
   }
 
   return notifications;
-}
-
-// ─── REPORT GENERATION ───────────────────────────────────────
-
-export function generateReport(state: FinanceState, period: ReportPeriod): ReportData {
-  const cashFlow = calculateCashFlow(state.income, state.expenses, period);
-  const { total: outstandingTotal } = calculateOutstandingInvoices(state.invoices);
-  const payrollTotal = calculatePayrollCost(state.payroll);
-
-  const now = new Date();
-  let start: Date, end: Date;
-  switch (period) {
-    case "Daily": start = subDays(now, 1); end = now; break;
-    case "Weekly": start = startOfWeek(now); end = endOfWeek(now); break;
-    case "Monthly": start = startOfMonth(now); end = endOfMonth(now); break;
-    case "Quarterly": start = startOfQuarter(now); end = endOfQuarter(now); break;
-    case "Yearly": start = startOfYear(now); end = endOfYear(now); break;
-  }
-
-  return {
-    period,
-    dateRange: { start: start.toISOString(), end: end.toISOString() },
-    revenue: cashFlow.totalIncome,
-    expenses: cashFlow.totalExpenses,
-    profit: cashFlow.netProfit,
-    cashFlow,
-    outstandingInvoices: outstandingTotal,
-    payrollTotal,
-    generatedAt: now.toISOString(),
-  };
 }

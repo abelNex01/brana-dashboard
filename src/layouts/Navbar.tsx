@@ -44,6 +44,7 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "next-themes";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { AuthSlides } from "@/data/cloudinary-images";
 
 export function Navbar() {
   const { toggleNotification } = useDashboard();
@@ -127,7 +128,7 @@ export function Navbar() {
                   </div>
                   <Avatar className="h-8 w-8 border border-border/40 shadow-inner">
                     <AvatarImage
-                      src={currentUser?.avatar || "/profile.webp"}
+                      src={currentUser?.avatar || AuthSlides.avatar}
                       alt={displayName}
                       className="object-cover"
                     />
@@ -148,7 +149,7 @@ export function Navbar() {
                   <div className="relative">
                     <Avatar className="h-10 w-10 border border-border/40 shadow-inner">
                       <AvatarImage
-                        src={currentUser?.avatar || "/profile.webp"}
+                        src={currentUser?.avatar || AuthSlides.avatar}
                         alt={displayName}
                         className="object-cover"
                       />
@@ -559,7 +560,7 @@ export function Navbar() {
           <div className="space-y-3.5 mt-4 text-left">
             <div className="flex items-center gap-4 p-3 bg-muted/20 border border-border/60 rounded-xl">
               <Avatar className="h-14 w-14 border border-border/40">
-                <AvatarImage src={currentUser?.avatar || "/profile.webp"} alt={displayName} className="object-cover" />
+                <AvatarImage src={currentUser?.avatar || AuthSlides.avatar} alt={displayName} className="object-cover" />
                 <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div>

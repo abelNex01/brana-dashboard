@@ -39,7 +39,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     >
       <SmallScreenOverlay />
       <div
-        className="w-full max-w-[1850px] rounded-3xl border border-primary/20 shadow-[0_0_30px_rgba(0,255,127,0.05)] overflow-hidden flex flex-row relative z-10 bg-card"
+        className="w-full max-w-[1850px] rounded-md border border-gray-200 dark:border-gray-800 shadow-[0_0_30px_rgba(0,0,0,0.1)] overflow-hidden flex flex-row relative z-10 bg-card"
         style={{ height: "calc(100vh - 24px)" }}
       >
         <Sidebar />

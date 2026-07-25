@@ -8,6 +8,7 @@
 
 import { format, formatDistanceToNow, parseISO, isValid } from "date-fns";
 import type { Currency } from "@/types/finance";
+import { logger } from "@/utils/logger";
 
 // ─── Currency ────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ export function formatCurrency(amount: number, currency: Currency = "USD"): stri
       maximumFractionDigits: 2,
     }).format(amount);
   } catch (e) {
-    console.warn("Currency formatting error:", e);
+    logger.warn("Currency formatting error", e);
     return `${config.symbol}${amount.toFixed(2)}`;
   }
 }
@@ -48,7 +49,7 @@ export function formatDate(dateStr: string, fmt: string = "MMM d, yyyy"): string
     const d = parseISO(dateStr);
     return isValid(d) ? format(d, fmt) : "—";
   } catch (e) {
-    console.warn("Date parsing error:", e);
+    logger.warn("Date parsing error", e);
     return "—";
   }
 }
@@ -67,7 +68,7 @@ export function getRelativeTime(dateStr: string): string {
     const d = parseISO(dateStr);
     return isValid(d) ? formatDistanceToNow(d, { addSuffix: true }) : "—";
   } catch (e) {
-    console.warn("Relative time parsing error:", e);
+    logger.warn("Relative time parsing error", e);
     return "—";
   }
 }

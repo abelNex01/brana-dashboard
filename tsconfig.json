@@ -19,7 +19,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@assets/*": ["./src/assets/*"]
-    }
+    },
+    "types": []
   },
   "include": ["src"],
   "exclude": ["src/test"],

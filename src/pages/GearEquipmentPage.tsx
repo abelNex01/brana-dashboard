@@ -40,7 +40,9 @@ import {
   ActionButton,
 } from "@/components/CrudModal";
 import { DetailsModal } from "@/components/DetailsModal";
-const defaultGearImg = "/gear/camera1.webp";
+import CloudinaryImage from "@/components/ui/CloudinaryImage";
+import { CloudinaryImages } from "@/data/cloudinary-images";
+const defaultGearImg: string = CloudinaryImages.gear.sonyFx3;
 
 // ── Constants ─────────────────────────────────────────────────────
 const ALL_CATEGORIES: (GearCategory | "All")[] = [
@@ -64,36 +66,36 @@ const ALL_STATUSES: (GearStatus | "All")[] = [
 
 const statusStyles = {
   available: {
-    text: "text-emerald-500 dark:text-emerald-400",
-    bg: "bg-emerald-500/10 border border-emerald-500/20",
+    text: "text-gray-500 dark:text-gray-400",
+    bg: "bg-gray-500/10 border border-gray-500/20",
     label: "AVAILABLE",
-    dot: "#10b981",
+    dot: "#999999",
   },
   "checked-out": {
-    text: "text-amber-500 dark:text-amber-400",
-    bg: "bg-amber-500/10 border border-amber-500/20",
+    text: "text-gray-600 dark:text-gray-500",
+    bg: "bg-gray-600/10 border border-gray-600/20",
     label: "CHECKED OUT",
-    dot: "#f59e0b",
+    dot: "#666666",
   },
   maintenance: {
-    text: "text-orange-500 dark:text-orange-400",
-    bg: "bg-orange-500/10 border border-orange-500/20",
+    text: "text-gray-700 dark:text-gray-600",
+    bg: "bg-gray-700/10 border border-gray-700/20",
     label: "MAINTENANCE",
-    dot: "#f97316",
+    dot: "#444444",
   },
   damaged: {
-    text: "text-red-500 dark:text-red-400",
-    bg: "bg-red-500/10 border border-red-500/20",
+    text: "text-gray-900 dark:text-gray-800",
+    bg: "bg-gray-900/10 border border-gray-900/20",
     label: "DAMAGED",
-    dot: "#ef4444",
+    dot: "#000000",
   },
 };
 
 const statusBadgeStyles = {
-  available: "bg-emerald-500 text-white",
-  "checked-out": "bg-amber-500 text-black",
-  maintenance: "bg-orange-500 text-white",
-  damaged: "bg-red-500 text-white",
+  available: "bg-gray-500 text-white",
+  "checked-out": "bg-gray-600 text-white",
+  maintenance: "bg-gray-700 text-white",
+  damaged: "bg-gray-900 text-white",
 };
 
 // Small glyph shown in the card's identity badge + hover overlay, keyed to status
@@ -190,7 +192,7 @@ function LargeGearCard({
     >
       {/* Photo, badged with status badge — top-right */}
       <div className="relative m-2 aspect-[5/6] rounded-[20px] overflow-hidden bg-muted dark:bg-[#232323]">
-        <img
+        <CloudinaryImage
           src={item.image ?? defaultGearImg}
           alt={item.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -336,7 +338,6 @@ export default function GearEquipmentPage() {
     addGearItem,
     updateGearItem: update,
     removeGearItem: remove,
-    resetGearItems,
   } = useGear();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -368,10 +369,41 @@ export default function GearEquipmentPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setFormData((prev) => ({
-          ...prev,
-          image: (event.target?.result as string) || defaultGearImg,
-        }));
+        const rawData = (event.target?.result as string) || defaultGearImg;
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.8);
+          setFormData((prev) => ({
+            ...prev,
+            image: compressed || rawData,
+          }));
+        };
+        img.onerror = () => {
+          setFormData((prev) => ({
+            ...prev,
+            image: rawData,
+          }));
+        };
+        img.src = rawData;
       };
       reader.readAsDataURL(file);
     }
@@ -492,34 +524,6 @@ export default function GearEquipmentPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Reset Gear Data */}
-          <button
-            onClick={() => {
-              if (
-                confirm(
-                  "Are you sure you want to reset all gear data to defaults?",
-                )
-              ) {
-                resetGearItems();
-              }
-            }}
-            className="w-14 h-14 rounded-full flex items-center justify-center text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors border border-red-500/30 shadow-sm"
-            title="Reset Gear Data"
-          >
-            <svg
-              className="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          </button>
           {/* Add New Equipment */}
           <button
             onClick={handleOpenCreate}
@@ -632,7 +636,7 @@ export default function GearEquipmentPage() {
           <FormField label="Gear Image">
             <div className="flex flex-col gap-2">
               <div className="w-full h-32 rounded-xl border border-border/40 overflow-hidden bg-muted/30">
-                <img
+                <CloudinaryImage
                   src={formData.image}
                   alt="Gear Preview"
                   className="w-full h-full object-cover"
@@ -814,20 +818,20 @@ export default function GearEquipmentPage() {
             label: selectedDetailsItem.status.replace("-", " "),
             color:
               selectedDetailsItem.status === "available"
-                ? "hsl(152 100% 50%)"
+                ? "#999999"
                 : selectedDetailsItem.status === "checked-out"
-                  ? "#f59e0b"
+                  ? "#666666"
                   : selectedDetailsItem.status === "maintenance"
-                    ? "#f97316"
-                    : "#ef4444",
+                    ? "#444444"
+                    : "#000000",
             bg:
               selectedDetailsItem.status === "available"
-                ? "rgba(0,255,127,0.12)"
+                ? "rgba(153,153,153,0.12)"
                 : selectedDetailsItem.status === "checked-out"
-                  ? "rgba(251,191,36,0.12)"
+                  ? "rgba(102,102,102,0.12)"
                   : selectedDetailsItem.status === "maintenance"
-                    ? "rgba(251,146,60,0.12)"
-                    : "rgba(239,68,68,0.12)",
+                    ? "rgba(68,68,68,0.12)"
+                    : "rgba(0,0,0,0.12)",
           }}
           details={[
             { label: "Category", value: selectedDetailsItem.category },

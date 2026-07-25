@@ -89,6 +89,8 @@ export default function AuthPage() {
   const [signInPassword, setSignInPassword] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [signInError, setSignInError] = useState("");
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,8 +190,19 @@ export default function AuthPage() {
   };
 
   const handleSignUp = async () => {
+    setError("");
     const result = await signUp({ email, password, fullName, phone, role, avatar });
-    if (!result.ok) setError(result.error ?? "Sign up failed.");
+    if (!result.ok) {
+      setError(result.error ?? "Sign up failed.");
+      return;
+    }
+    // If Supabase requires email confirmation, show a success banner
+    if (result.confirmEmail) {
+      setConfirmationEmail(email);
+      setShowConfirmation(true);
+      return;
+    }
+    // Otherwise the onAuthStateChange listener will log the user in automatically
   };
 
   const handleSignIn = async () => {
@@ -294,24 +307,24 @@ export default function AuthPage() {
                 transition={{ duration: 0.35 }}
                 className="auth-form-inner"
               >
-                {/* Badge */}
-                <div className="auth-badge">
-                  <User size={12} />
-                  <span>Accounts</span>
-                </div>
+                <h1 className="auth-form-title">
+                  {showConfirmation ? "Account Created" : "Create Your Account"}
+                </h1>
+                {!showConfirmation && (
+                  <>
+                    <p className="auth-step-label">
+                      Step {step} of {totalSteps}
+                    </p>
 
-                <h1 className="auth-form-title">Create Your Account</h1>
-                <p className="auth-step-label">
-                  Step {step} of {totalSteps}
-                </p>
-
-                {/* Step progress bar */}
-                <div className="auth-step-bar">
-                  <div
-                    className="auth-step-bar-fill"
-                    style={{ width: `${(step / totalSteps) * 100}%` }}
-                  />
-                </div>
+                    {/* Step progress bar */}
+                    <div className="auth-step-bar">
+                      <div
+                        className="auth-step-bar-fill"
+                        style={{ width: `${(step / totalSteps) * 100}%` }}
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Capacity warning */}
                 {isAtCapacity && (
@@ -327,7 +340,72 @@ export default function AuthPage() {
                   </div>
                 )}
 
-                {!isAtCapacity && (
+                {/* Email confirmation success */}
+                {showConfirmation && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.35 }}
+                    className="auth-step-content"
+                    style={{ textAlign: "center", padding: "32px 0" }}
+                  >
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: "50%",
+                        background: "rgba(34, 197, 94, 0.12)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 20px",
+                      }}
+                    >
+                      <Mail size={28} style={{ color: "#22c55e" }} />
+                    </div>
+                    <h3
+                      style={{
+                        fontSize: "1.15rem",
+                        fontWeight: 700,
+                        marginBottom: 8,
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      Check Your Email
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "var(--muted-foreground)",
+                        lineHeight: 1.6,
+                        maxWidth: 340,
+                        margin: "0 auto 24px",
+                      }}
+                    >
+                      We've sent a confirmation link to{" "}
+                      <strong style={{ color: "var(--foreground)" }}>
+                        {confirmationEmail}
+                      </strong>
+                      . Please click the link in the email to activate your
+                      account, then come back and sign in.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowConfirmation(false);
+                        switchMode("signin");
+                        setSignInEmail(confirmationEmail);
+                      }}
+                      className="auth-nav-btn auth-nav-btn--primary"
+                      style={{ margin: "0 auto" }}
+                    >
+                      Go to Sign In
+                      <ArrowRight size={16} />
+                    </button>
+                  </motion.div>
+                )}
+
+                {!isAtCapacity && !showConfirmation && (
                   <AnimatePresence mode="wait">
                     {/* ── STEP 1 ── */}
                     {step === 1 && (
@@ -681,62 +759,66 @@ export default function AuthPage() {
                   </AnimatePresence>
                 )}
 
-                {/* Error */}
-                {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="auth-error"
-                  >
-                    {error}
-                  </motion.p>
-                )}
-
-                {/* Switch link */}
-                <p className="auth-switch">
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => switchMode("signin")}
-                    className="auth-switch-link"
-                  >
-                    Sign In
-                  </button>
-                </p>
-
-                {/* Navigation */}
-                {!isAtCapacity && (
-                  <div className="auth-nav-row">
-                    <button
-                      type="button"
-                      onClick={handlePrev}
-                      disabled={step === 1}
-                      className="auth-nav-btn auth-nav-btn--secondary"
-                    >
-                      <ArrowLeft size={16} />
-                      Previous
-                    </button>
-
-                    {step < totalSteps ? (
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        className="auth-nav-btn auth-nav-btn--primary"
+                {!showConfirmation && (
+                  <>
+                    {/* Error */}
+                    {error && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="auth-error"
                       >
-                        Next
-                        <ArrowRight size={16} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSignUp}
-                        className="auth-nav-btn auth-nav-btn--primary"
-                      >
-                        Create Account
-                        <ArrowRight size={16} />
-                      </button>
+                        {error}
+                      </motion.p>
                     )}
-                  </div>
+
+                    {/* Switch link */}
+                    <p className="auth-switch">
+                      Already have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => switchMode("signin")}
+                        className="auth-switch-link"
+                      >
+                        Sign In
+                      </button>
+                    </p>
+
+                    {/* Navigation */}
+                    {!isAtCapacity && (
+                      <div className="auth-nav-row">
+                        <button
+                          type="button"
+                          onClick={handlePrev}
+                          disabled={step === 1}
+                          className="auth-nav-btn auth-nav-btn--secondary"
+                        >
+                          <ArrowLeft size={16} />
+                          Previous
+                        </button>
+
+                        {step < totalSteps ? (
+                          <button
+                            type="button"
+                            onClick={handleNext}
+                            className="auth-nav-btn auth-nav-btn--primary"
+                          >
+                            Next
+                            <ArrowRight size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSignUp}
+                            className="auth-nav-btn auth-nav-btn--primary"
+                          >
+                            Create Account
+                            <ArrowRight size={16} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             ) : (

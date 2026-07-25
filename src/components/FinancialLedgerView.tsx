@@ -10,7 +10,6 @@ import {
   formatCurrency,
   formatShortDate,
   humanize,
-  generateId,
 } from "@/utils/formatters";
 import {
   CrudModal,
@@ -29,26 +28,16 @@ import {
   Trash2,
   Eye,
   FileText,
-  Settings,
   DollarSign,
   TrendingDown,
   Layers,
-  Shield,
   Briefcase,
-  PenTool,
   Calendar,
-  User,
-  Hash,
-  Clock,
   CreditCard,
   Tag,
   Package,
   Activity,
-  Printer,
-  Mail,
-  Phone,
-  MapPin,
-  DollarSign as Dollar,
+  Clock,
 } from "lucide-react";
 
 const DOMAINS = [
@@ -71,7 +60,7 @@ const DOMAINS = [
 export function FinancialLedgerView() {
   const [activeDomain, setActiveDomain] = useState("income");
   const [search, setSearch] = useState("");
-  const { filterItems, filters, setFilters } = useFinanceFilters();
+  const { filterItems, setFilters } = useFinanceFilters();
 
   // Update filters when search changes
   React.useEffect(() => {
@@ -209,7 +198,7 @@ export function FinancialLedgerView() {
       });
     } else if (activeDomain === "payroll") {
       payrollHook.create({
-        employeeId: formFields.employeeId || generateId("emp"),
+        employeeId: formFields.employeeId || `emp_${Date.now()}`,
         name: formFields.name || "",
         role: formFields.role || "",
         baseSalary: Number(formFields.baseSalary) || 0,
@@ -319,7 +308,7 @@ export function FinancialLedgerView() {
             {
               label: "Invoice ID",
               value: selectedRecord.invoiceId || "—",
-              icon: Hash,
+              icon: FileText,
             },
             {
               label: "Description",
@@ -329,17 +318,7 @@ export function FinancialLedgerView() {
             {
               label: "Notes",
               value: selectedRecord.notes || "—",
-              icon: PenTool,
-            },
-            {
-              label: "Favorite",
-              value: selectedRecord.isFavorite ? "Yes" : "No",
-              icon: Heart,
-            },
-            {
-              label: "Pinned",
-              value: selectedRecord.isPinned ? "Yes" : "No",
-              icon: Pin,
+              icon: FileText,
             },
           ],
           description: selectedRecord.description,
@@ -396,7 +375,7 @@ export function FinancialLedgerView() {
             {
               label: "Notes",
               value: selectedRecord.notes || "—",
-              icon: PenTool,
+              icon: FileText,
             },
           ],
           description: selectedRecord.description,
@@ -479,7 +458,7 @@ export function FinancialLedgerView() {
             {
               label: "Notes",
               value: selectedRecord.notes || "—",
-              icon: PenTool,
+              icon: FileText,
             },
           ],
           description: `Payroll entry for ${selectedRecord.name}`,
@@ -529,7 +508,7 @@ export function FinancialLedgerView() {
             {
               label: "Notes",
               value: selectedRecord.notes || "—",
-              icon: PenTool,
+              icon: FileText,
             },
           ],
           description: `Subscription for ${selectedRecord.name}`,
@@ -552,11 +531,10 @@ export function FinancialLedgerView() {
         </p>
       </header>
 
-      {/* Overview Section — Wallet-style cards */}
+      {/* Overview Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        {/* ── CARD 1 · TOTAL INCOME · Emerald aurora ── */}
+        {/* TOTAL INCOME */}
         <div className="overflow-hidden rounded-[26px] border border-border/50 bg-card shadow-sm">
-          {/* Header */}
           <div className="flex items-start justify-between px-5 pb-4 pt-5">
             <div>
               <h3 className="text-base font-semibold tracking-tight text-foreground">
@@ -572,20 +550,11 @@ export function FinancialLedgerView() {
             </div>
           </div>
 
-          {/* Aurora panel */}
           <div className="relative m-2 mt-0 h-44 overflow-hidden rounded-[20px] bg-gradient-to-br from-emerald-600 via-emerald-500 to-green-700 dark:from-emerald-700 dark:via-emerald-500 dark:to-green-800">
             <div className="pointer-events-none absolute -right-10 top-0 h-44 w-44 rounded-full bg-lime-300/50 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-14 left-10 h-40 w-40 rounded-full bg-teal-300/30 blur-3xl" />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent dark:from-black/25" />
 
-            {/* Toggle-style glass chip */}
-            <div className="absolute left-4 top-4 flex h-8 w-14 items-center rounded-full bg-white/20 backdrop-blur-md dark:bg-white/15">
-              <span className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
-                <TrendingDown className="h-3.5 w-3.5 rotate-180 text-emerald-600" />
-              </span>
-            </div>
-
-            {/* Amount */}
             <div className="absolute bottom-4 left-5">
               <p className="text-3xl font-black tracking-tight text-white">
                 {formatCurrency(totalIncome)}
@@ -597,7 +566,7 @@ export function FinancialLedgerView() {
           </div>
         </div>
 
-        {/* ── CARD 2 · TOTAL EXPENSES · Rose aurora ── */}
+        {/* TOTAL EXPENSES */}
         <div className="overflow-hidden rounded-[26px] border border-border/50 bg-card shadow-sm">
           <div className="flex items-start justify-between px-5 pb-4 pt-5">
             <div>
@@ -622,12 +591,6 @@ export function FinancialLedgerView() {
             <div className="pointer-events-none absolute -bottom-14 left-10 h-40 w-40 rounded-full bg-pink-300/30 blur-3xl" />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent dark:from-black/25" />
 
-            <div className="absolute left-4 top-4 flex h-8 w-14 items-center rounded-full bg-white/20 backdrop-blur-md dark:bg-white/15">
-              <span className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
-                <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
-              </span>
-            </div>
-
             <div className="absolute bottom-4 left-5">
               <p className="text-3xl font-black tracking-tight text-white">
                 {formatCurrency(totalExpenses)}
@@ -639,7 +602,7 @@ export function FinancialLedgerView() {
           </div>
         </div>
 
-        {/* ── CARD 3 · NET BALANCE · Indigo aurora (amber when loss) ── */}
+        {/* NET BALANCE */}
         <div className="overflow-hidden rounded-[26px] border border-border/50 bg-card shadow-sm">
           <div className="flex items-start justify-between px-5 pb-4 pt-5">
             <div>
@@ -686,18 +649,6 @@ export function FinancialLedgerView() {
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent dark:from-black/25" />
 
-            <div className="absolute left-4 top-4 flex h-8 w-14 items-center rounded-full bg-white/20 backdrop-blur-md dark:bg-white/15">
-              <span className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
-                <Package
-                  className={`h-3.5 w-3.5 ${
-                    totalIncome - totalExpenses >= 0
-                      ? "text-indigo-600"
-                      : "text-amber-600"
-                  }`}
-                />
-              </span>
-            </div>
-
             <div className="absolute bottom-4 left-5">
               <p className="text-3xl font-black tracking-tight text-white">
                 {formatCurrency(totalIncome - totalExpenses)}
@@ -723,14 +674,6 @@ export function FinancialLedgerView() {
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             />
-            <span className="flex items-center gap-1 shrink-0">
-              <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
-                ⌘
-              </kbd>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
-                F
-              </kbd>
-            </span>
           </div>
         </div>
 
@@ -744,7 +687,7 @@ export function FinancialLedgerView() {
         </button>
       </div>
 
-      {/* Scrollable domain navigation rail */}
+      {/* Domain navigation rail */}
       <div className="flex gap-2.5 overflow-x-auto pb-2 custom-scrollbar">
         {DOMAINS.map((d) => {
           const Icon = d.icon;
@@ -792,26 +735,6 @@ export function FinancialLedgerView() {
                   <th className="p-4 text-center">Actions</th>
                 </>
               )}
-              {activeDomain === "invoices" && (
-                <>
-                  <th className="p-4">Invoice #</th>
-                  <th className="p-4">Client</th>
-                  <th className="p-4 text-right">Total</th>
-                  <th className="p-4 text-center">Status</th>
-                  <th className="p-4">Due Date</th>
-                  <th className="p-4 text-center">Actions</th>
-                </>
-              )}
-              {activeDomain === "editorPayments" && (
-                <>
-                  <th className="p-4">Editor</th>
-                  <th className="p-4">Role</th>
-                  <th className="p-4 text-right">Total</th>
-                  <th className="p-4 text-right">Remaining</th>
-                  <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </>
-              )}
               {activeDomain === "payroll" && (
                 <>
                   <th className="p-4">Employee</th>
@@ -819,16 +742,6 @@ export function FinancialLedgerView() {
                   <th className="p-4 text-right">Total Pay</th>
                   <th className="p-4">Period</th>
                   <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </>
-              )}
-              {activeDomain === "gear" && (
-                <>
-                  <th className="p-4">Gear Item</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Condition</th>
-                  <th className="p-4 text-right">Price</th>
-                  <th className="p-4">Next Service</th>
                   <th className="p-4 text-center">Actions</th>
                 </>
               )}
@@ -842,14 +755,6 @@ export function FinancialLedgerView() {
                   <th className="p-4 text-center">Actions</th>
                 </>
               )}
-              {activeDomain === "audit" && (
-                <>
-                  <th className="p-4">Timestamp</th>
-                  <th className="p-4">Action</th>
-                  <th className="p-4">Entity Type</th>
-                  <th className="p-4">Description</th>
-                </>
-              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-border/20">
@@ -859,8 +764,7 @@ export function FinancialLedgerView() {
                   colSpan={7}
                   className="p-12 text-center text-muted-foreground font-medium"
                 >
-                  No records found. Click "Add Record" to seed data or adjust
-                  your search filter.
+                  No records found. Click "+" to add a new record.
                 </td>
               </tr>
             ) : (
@@ -926,64 +830,6 @@ export function FinancialLedgerView() {
                     </>
                   )}
 
-                  {activeDomain === "invoices" && (
-                    <>
-                      <td className="p-4 font-bold text-primary">
-                        {item.invoiceNumber}
-                      </td>
-                      <td className="p-4 font-bold text-foreground">
-                        {item.clientName}
-                      </td>
-                      <td className="p-4 text-right font-black text-foreground">
-                        {formatCurrency(item.grandTotal, item.currency)}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                            item.status === "Paid"
-                              ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                              : item.status === "Sent"
-                                ? "bg-blue-500/10 text-blue-500 border border-blue-500/20"
-                                : "bg-red-500/10 text-red-500 border border-red-500/20"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {formatShortDate(item.dueDate)}
-                      </td>
-                    </>
-                  )}
-
-                  {activeDomain === "editorPayments" && (
-                    <>
-                      <td className="p-4 font-bold text-foreground">
-                        {item.name}
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {humanize(item.role)}
-                      </td>
-                      <td className="p-4 text-right font-semibold text-foreground">
-                        {formatCurrency(item.amount, item.currency)}
-                      </td>
-                      <td className="p-4 text-right font-semibold text-red-500">
-                        {formatCurrency(item.remainingBalance, item.currency)}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                            item.status === "Paid"
-                              ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                              : "bg-red-500/10 text-red-500 border border-red-500/20"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                    </>
-                  )}
-
                   {activeDomain === "payroll" && (
                     <>
                       <td className="p-4 font-bold text-foreground">
@@ -1006,33 +852,6 @@ export function FinancialLedgerView() {
                         >
                           {item.status}
                         </span>
-                      </td>
-                    </>
-                  )}
-
-                  {activeDomain === "gear" && (
-                    <>
-                      <td className="p-4 font-bold text-foreground">
-                        {item.name}
-                      </td>
-                      <td className="p-4 text-muted-foreground">{item.type}</td>
-                      <td className="p-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                            item.condition === "Excellent" ||
-                            item.condition === "Good"
-                              ? "bg-green-500/10 text-green-500"
-                              : "bg-yellow-500/10 text-yellow-500"
-                          }`}
-                        >
-                          {item.condition}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right font-semibold text-foreground">
-                        {formatCurrency(item.purchasePrice, item.currency)}
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {formatShortDate(item.nextServiceDate)}
                       </td>
                     </>
                   )}
@@ -1068,50 +887,31 @@ export function FinancialLedgerView() {
                     </>
                   )}
 
-                  {activeDomain === "audit" && (
-                    <>
-                      <td className="p-4 text-muted-foreground">
-                        {formatShortDate(item.timestamp)}
-                      </td>
-                      <td className="p-4 font-bold text-foreground">
-                        {item.action}
-                      </td>
-                      <td className="p-4 font-semibold text-muted-foreground">
-                        {item.entityType}
-                      </td>
-                      <td className="p-4 text-foreground">
-                        {item.description}
-                      </td>
-                    </>
-                  )}
-
-                  {activeDomain !== "audit" && (
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => handleOpenDetails(item)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/20 border border-border/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
-                          title="View properties details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/20 border border-border/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
-                          title="Edit record"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenDelete(item)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 hover:border-red-500/30 text-red-400 hover:text-red-500 transition-all"
-                          title="Delete record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
+                  <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenDetails(item)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/20 border border-border/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
+                        title="View properties details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/20 border border-border/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
+                        title="Edit record"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenDelete(item)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 hover:border-red-500/30 text-red-400 hover:text-red-500 transition-all"
+                        title="Delete record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
@@ -1119,7 +919,7 @@ export function FinancialLedgerView() {
         </table>
       </div>
 
-      {/* ─── ADD MODAL ─── */}
+      {/* ADD MODAL */}
       <CrudModal
         open={isAddOpen}
         onClose={() => setIsAddOpen(false)}
@@ -1157,23 +957,14 @@ export function FinancialLedgerView() {
                       { value: "WeddingPackage", label: "Wedding Package" },
                       { value: "DepositPayment", label: "Deposit Payment" },
                       { value: "FinalPayment", label: "Final Payment" },
-                      {
-                        value: "AdditionalServices",
-                        label: "Additional Services",
-                      },
+                      { value: "AdditionalServices", label: "Additional Services" },
                       { value: "DroneServices", label: "Drone Services" },
                       { value: "EngagementShoot", label: "Engagement Shoot" },
-                      {
-                        value: "LivestreamServices",
-                        label: "Livestream Services",
-                      },
+                      { value: "LivestreamServices", label: "Livestream Services" },
                       { value: "TravelFees", label: "Travel Fees" },
                       { value: "AlbumSales", label: "Album Sales" },
                       { value: "ExtraHours", label: "Extra Hours" },
-                      {
-                        value: "RushDeliveryFees",
-                        label: "Rush Delivery Fees",
-                      },
+                      { value: "RushDeliveryFees", label: "Rush Delivery Fees" },
                     ]}
                     value={formFields.category || "WeddingPackage"}
                     onChange={(e) =>
@@ -1291,40 +1082,6 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Favorite">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "false", label: "No" },
-                      { value: "true", label: "Yes" },
-                    ]}
-                    value={formFields.isFavorite ? "true" : "false"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        isFavorite: e.target.value === "true",
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Pinned">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "false", label: "No" },
-                      { value: "true", label: "Yes" },
-                    ]}
-                    value={formFields.isPinned ? "true" : "false"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        isPinned: e.target.value === "true",
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
             </>
           )}
 
@@ -1345,22 +1102,13 @@ export function FinancialLedgerView() {
                   <StyledSelect
                     accentColor={activeColor}
                     options={[
-                      {
-                        value: "EquipmentPurchases",
-                        label: "Equipment Purchases",
-                      },
-                      {
-                        value: "CameraAccessories",
-                        label: "Camera Accessories",
-                      },
+                      { value: "EquipmentPurchases", label: "Equipment Purchases" },
+                      { value: "CameraAccessories", label: "Camera Accessories" },
                       { value: "Lighting", label: "Lighting" },
                       { value: "AudioGear", label: "Audio Gear" },
                       { value: "LensPurchases", label: "Lens Purchases" },
                       { value: "StorageDevices", label: "Storage Devices" },
-                      {
-                        value: "SoftwareSubscriptions",
-                        label: "Software Subscriptions",
-                      },
+                      { value: "SoftwareSubscriptions", label: "Software Subscriptions" },
                       { value: "OfficeExpenses", label: "Office Expenses" },
                       { value: "InternetBills", label: "Internet Bills" },
                       { value: "Transportation", label: "Transportation" },
@@ -1401,7 +1149,7 @@ export function FinancialLedgerView() {
                     placeholder="1"
                     value={formFields.quantity || 1}
                     onChange={(e) =>
-                      setFormFields({ ...formFields, quantity: e.target.value })
+                      setFormFields({ ...formFields, quantity: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -1530,349 +1278,12 @@ export function FinancialLedgerView() {
             </>
           )}
 
-          {activeDomain === "invoices" && (
-            <>
-              <FormField label="Client Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Dawit & Selam"
-                  value={formFields.clientName || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, clientName: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Client Email">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. client@example.com"
-                    value={formFields.clientEmail || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        clientEmail: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Client Phone">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. +1 555-1234"
-                    value={formFields.clientPhone || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        clientPhone: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Subtotal">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.subtotal || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        subtotal: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Tax Rate (%)">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.taxRate || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        taxRate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Tax Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.taxAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        taxAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Discount Rate (%)">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.discountRate || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        discountRate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Discount Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.discountAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        discountAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Grand Total">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="e.g. 5000"
-                    value={formFields.grandTotal || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        grandTotal: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Status">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Draft", label: "Draft" },
-                      { value: "Sent", label: "Sent" },
-                      { value: "Viewed", label: "Viewed" },
-                      { value: "Paid", label: "Paid" },
-                      { value: "Overdue", label: "Overdue" },
-                      { value: "Cancelled", label: "Cancelled" },
-                    ]}
-                    value={formFields.status || "Draft"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Issue Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.issueDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        issueDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Due Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.dueDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, dueDate: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
-          {activeDomain === "editorPayments" && (
-            <>
-              <FormField label="Editor Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Solomon Girma"
-                  value={formFields.name || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, name: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Role">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "VideoEditor", label: "Video Editor" },
-                      { value: "Colorist", label: "Colorist" },
-                      { value: "SoundDesigner", label: "Sound Designer" },
-                      { value: "Photographer", label: "Photographer" },
-                      { value: "DroneOperator", label: "Drone Operator" },
-                      { value: "Assistant", label: "Assistant" },
-                    ]}
-                    value={formFields.role || "VideoEditor"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, role: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Project">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="Project name..."
-                    value={formFields.project || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, project: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Total Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="Total pay..."
-                    value={formFields.amount || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, amount: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Paid Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="Paid so far..."
-                    value={formFields.paidAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paidAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Status">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Unpaid", label: "Unpaid" },
-                      { value: "Partial", label: "Partial" },
-                      { value: "Paid", label: "Paid" },
-                    ]}
-                    value={formFields.status || "Unpaid"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Payment Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.paymentDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paymentDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Deadline">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.deadline?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, deadline: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
           {activeDomain === "payroll" && (
             <>
               <FormField label="Employee Name">
                 <StyledInput
                   accentColor={activeColor}
-                  placeholder="e.g. Abi Sala"
+                  placeholder="e.g. Abi Salah"
                   value={formFields.name || ""}
                   onChange={(e) =>
                     setFormFields({ ...formFields, name: e.target.value })
@@ -1889,7 +1300,7 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Base Salary">
                   <StyledInput
                     accentColor={activeColor}
@@ -1897,10 +1308,7 @@ export function FinancialLedgerView() {
                     placeholder="e.g. 3000"
                     value={formFields.baseSalary || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        baseSalary: e.target.value,
-                      })
+                      setFormFields({ ...formFields, baseSalary: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -1908,57 +1316,47 @@ export function FinancialLedgerView() {
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 500"
                     value={formFields.bonus || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        bonus: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Commission">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.commission || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        commission: e.target.value,
-                      })
+                      setFormFields({ ...formFields, bonus: Number(e.target.value) })
                     }
                   />
                 </FormField>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Commission">
+                  <StyledInput
+                    accentColor={activeColor}
+                    type="number"
+                    placeholder="e.g. 200"
+                    value={formFields.commission || ""}
+                    onChange={(e) =>
+                      setFormFields({ ...formFields, commission: Number(e.target.value) })
+                    }
+                  />
+                </FormField>
                 <FormField label="Allowance">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 150"
                     value={formFields.allowance || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        allowance: e.target.value,
-                      })
+                      setFormFields({ ...formFields, allowance: Number(e.target.value) })
                     }
                   />
                 </FormField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Overtime">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 0"
                     value={formFields.overtime || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        overtime: e.target.value,
-                      })
+                      setFormFields({ ...formFields, overtime: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -1966,30 +1364,22 @@ export function FinancialLedgerView() {
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 100"
                     value={formFields.deductions || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        deductions: e.target.value,
-                      })
+                      setFormFields({ ...formFields, deductions: Number(e.target.value) })
                     }
                   />
                 </FormField>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
+                <FormField label="Period (YYYY-MM)">
+                  <StyledInput
                     accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
+                    placeholder="e.g. 2025-05"
+                    value={formFields.period || ""}
                     onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
+                      setFormFields({ ...formFields, period: e.target.value })
                     }
                   />
                 </FormField>
@@ -2004,223 +1394,6 @@ export function FinancialLedgerView() {
                     value={formFields.status || "Pending"}
                     onChange={(e) =>
                       setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Period">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. 2026-06"
-                    value={formFields.period || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, period: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Payment Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.paymentDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paymentDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
-          {activeDomain === "gear" && (
-            <>
-              <FormField label="Gear Item Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Sony FX3 Camera"
-                  value={formFields.name || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, name: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Type">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Camera", label: "Camera" },
-                      { value: "Lens", label: "Lens" },
-                      { value: "Gimbal", label: "Gimbal" },
-                      { value: "Light", label: "Light" },
-                      { value: "Microphone", label: "Microphone" },
-                      { value: "Computer", label: "Computer" },
-                      { value: "StorageDevice", label: "Storage Device" },
-                      { value: "Drone", label: "Drone" },
-                      { value: "Monitor", label: "Monitor" },
-                      { value: "Tripod", label: "Tripod" },
-                    ]}
-                    value={formFields.type || "Camera"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, type: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Manufacturer">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. Sony"
-                    value={formFields.manufacturer || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        manufacturer: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Model">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. FX3"
-                    value={formFields.model || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, model: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Condition">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Excellent", label: "Excellent" },
-                      { value: "Good", label: "Good" },
-                      { value: "Fair", label: "Fair" },
-                      { value: "NeedsRepair", label: "Needs Repair" },
-                      { value: "Retired", label: "Retired" },
-                    ]}
-                    value={formFields.condition || "Excellent"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        condition: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Purchase Price">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    value={formFields.purchasePrice || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        purchasePrice: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Serial Number">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="SN-XXX-..."
-                    value={formFields.serialNumber || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        serialNumber: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Purchase Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.purchaseDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        purchaseDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Warranty Expiry">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.warrantyExpiry?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        warrantyExpiry: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Next Service Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.nextServiceDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        nextServiceDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Total Maintenance Cost">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.totalMaintenanceCost || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        totalMaintenanceCost: e.target.value,
-                      })
                     }
                   />
                 </FormField>
@@ -2250,43 +1423,40 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
+              <FormField label="Provider">
+                <StyledInput
+                  accentColor={activeColor}
+                  placeholder="e.g. Adobe"
+                  value={formFields.provider || ""}
+                  onChange={(e) =>
+                    setFormFields({ ...formFields, provider: e.target.value })
+                  }
+                />
+              </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Provider">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. Adobe"
-                    value={formFields.provider || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, provider: e.target.value })
-                    }
-                  />
-                </FormField>
                 <FormField label="Category">
                   <StyledInput
                     accentColor={activeColor}
-                    placeholder="e.g. Video Editing"
+                    placeholder="e.g. Editing Software"
                     value={formFields.category || ""}
                     onChange={(e) =>
                       setFormFields({ ...formFields, category: e.target.value })
                     }
                   />
                 </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Monthly Amount">
+                <FormField label="Monthly Cost">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
                     placeholder="e.g. 54.99"
                     value={formFields.monthlyAmount || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        monthlyAmount: e.target.value,
-                      })
+                      setFormFields({ ...formFields, monthlyAmount: Number(e.target.value) })
                     }
                   />
                 </FormField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Billing Cycle">
                   <StyledSelect
                     accentColor={activeColor}
@@ -2297,27 +1467,7 @@ export function FinancialLedgerView() {
                     ]}
                     value={formFields.billingCycle || "Monthly"}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        billingCycle: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
+                      setFormFields({ ...formFields, billingCycle: e.target.value })
                     }
                   />
                 </FormField>
@@ -2342,10 +1492,7 @@ export function FinancialLedgerView() {
                   type="date"
                   value={formFields.renewalDate?.split("T")[0] || ""}
                   onChange={(e) =>
-                    setFormFields({
-                      ...formFields,
-                      renewalDate: e.target.value,
-                    })
+                    setFormFields({ ...formFields, renewalDate: e.target.value })
                   }
                 />
               </FormField>
@@ -2361,28 +1508,28 @@ export function FinancialLedgerView() {
               </FormField>
             </>
           )}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-3">
-            <ActionButton
-              label="Cancel"
-              variant="secondary"
-              onClick={() => setIsAddOpen(false)}
-            />
-            <ActionButton
-              label="Save Record"
-              variant="primary"
-              accentColor={activeColor}
-              onClick={handleConfirmAdd}
-            />
-          </div>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/40 mt-5">
+          <ActionButton
+            onClick={() => setIsAddOpen(false)}
+            label="Cancel"
+            variant="secondary"
+          />
+          <ActionButton
+            onClick={handleConfirmAdd}
+            label="Add Record"
+            variant="primary"
+            accentColor={activeColor}
+          />
         </div>
       </CrudModal>
 
-      {/* ─── EDIT MODAL ─── */}
+      {/* EDIT MODAL */}
       <CrudModal
         open={isEditOpen}
         onClose={() => setIsEditOpen(false)}
-        title={`Edit ${humanize(activeDomain)}`}
+        title={`Edit ${humanize(activeDomain)} Record`}
         accentColor={activeColor}
       >
         <div className="space-y-4">
@@ -2416,23 +1563,14 @@ export function FinancialLedgerView() {
                       { value: "WeddingPackage", label: "Wedding Package" },
                       { value: "DepositPayment", label: "Deposit Payment" },
                       { value: "FinalPayment", label: "Final Payment" },
-                      {
-                        value: "AdditionalServices",
-                        label: "Additional Services",
-                      },
+                      { value: "AdditionalServices", label: "Additional Services" },
                       { value: "DroneServices", label: "Drone Services" },
                       { value: "EngagementShoot", label: "Engagement Shoot" },
-                      {
-                        value: "LivestreamServices",
-                        label: "Livestream Services",
-                      },
+                      { value: "LivestreamServices", label: "Livestream Services" },
                       { value: "TravelFees", label: "Travel Fees" },
                       { value: "AlbumSales", label: "Album Sales" },
                       { value: "ExtraHours", label: "Extra Hours" },
-                      {
-                        value: "RushDeliveryFees",
-                        label: "Rush Delivery Fees",
-                      },
+                      { value: "RushDeliveryFees", label: "Rush Delivery Fees" },
                     ]}
                     value={formFields.category || "WeddingPackage"}
                     onChange={(e) =>
@@ -2550,40 +1688,6 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Favorite">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "false", label: "No" },
-                      { value: "true", label: "Yes" },
-                    ]}
-                    value={formFields.isFavorite ? "true" : "false"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        isFavorite: e.target.value === "true",
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Pinned">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "false", label: "No" },
-                      { value: "true", label: "Yes" },
-                    ]}
-                    value={formFields.isPinned ? "true" : "false"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        isPinned: e.target.value === "true",
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
             </>
           )}
 
@@ -2604,22 +1708,13 @@ export function FinancialLedgerView() {
                   <StyledSelect
                     accentColor={activeColor}
                     options={[
-                      {
-                        value: "EquipmentPurchases",
-                        label: "Equipment Purchases",
-                      },
-                      {
-                        value: "CameraAccessories",
-                        label: "Camera Accessories",
-                      },
+                      { value: "EquipmentPurchases", label: "Equipment Purchases" },
+                      { value: "CameraAccessories", label: "Camera Accessories" },
                       { value: "Lighting", label: "Lighting" },
                       { value: "AudioGear", label: "Audio Gear" },
                       { value: "LensPurchases", label: "Lens Purchases" },
                       { value: "StorageDevices", label: "Storage Devices" },
-                      {
-                        value: "SoftwareSubscriptions",
-                        label: "Software Subscriptions",
-                      },
+                      { value: "SoftwareSubscriptions", label: "Software Subscriptions" },
                       { value: "OfficeExpenses", label: "Office Expenses" },
                       { value: "InternetBills", label: "Internet Bills" },
                       { value: "Transportation", label: "Transportation" },
@@ -2660,7 +1755,7 @@ export function FinancialLedgerView() {
                     placeholder="1"
                     value={formFields.quantity || 1}
                     onChange={(e) =>
-                      setFormFields({ ...formFields, quantity: e.target.value })
+                      setFormFields({ ...formFields, quantity: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -2789,349 +1884,12 @@ export function FinancialLedgerView() {
             </>
           )}
 
-          {activeDomain === "invoices" && (
-            <>
-              <FormField label="Client Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Dawit & Selam"
-                  value={formFields.clientName || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, clientName: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Client Email">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. client@example.com"
-                    value={formFields.clientEmail || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        clientEmail: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Client Phone">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. +1 555-1234"
-                    value={formFields.clientPhone || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        clientPhone: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Subtotal">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.subtotal || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        subtotal: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Tax Rate (%)">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.taxRate || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        taxRate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Tax Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.taxAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        taxAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Discount Rate (%)">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.discountRate || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        discountRate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Discount Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.discountAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        discountAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Grand Total">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="e.g. 5000"
-                    value={formFields.grandTotal || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        grandTotal: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Status">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Draft", label: "Draft" },
-                      { value: "Sent", label: "Sent" },
-                      { value: "Viewed", label: "Viewed" },
-                      { value: "Paid", label: "Paid" },
-                      { value: "Overdue", label: "Overdue" },
-                      { value: "Cancelled", label: "Cancelled" },
-                    ]}
-                    value={formFields.status || "Draft"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Issue Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.issueDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        issueDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Due Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.dueDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, dueDate: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
-          {activeDomain === "editorPayments" && (
-            <>
-              <FormField label="Editor Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Solomon Girma"
-                  value={formFields.name || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, name: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Role">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "VideoEditor", label: "Video Editor" },
-                      { value: "Colorist", label: "Colorist" },
-                      { value: "SoundDesigner", label: "Sound Designer" },
-                      { value: "Photographer", label: "Photographer" },
-                      { value: "DroneOperator", label: "Drone Operator" },
-                      { value: "Assistant", label: "Assistant" },
-                    ]}
-                    value={formFields.role || "VideoEditor"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, role: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Project">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="Project name..."
-                    value={formFields.project || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, project: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Total Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="Total pay..."
-                    value={formFields.amount || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, amount: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Paid Amount">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="Paid so far..."
-                    value={formFields.paidAmount || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paidAmount: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Status">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Unpaid", label: "Unpaid" },
-                      { value: "Partial", label: "Partial" },
-                      { value: "Paid", label: "Paid" },
-                    ]}
-                    value={formFields.status || "Unpaid"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Payment Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.paymentDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paymentDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Deadline">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.deadline?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, deadline: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
           {activeDomain === "payroll" && (
             <>
               <FormField label="Employee Name">
                 <StyledInput
                   accentColor={activeColor}
-                  placeholder="e.g. Abi Sala"
+                  placeholder="e.g. Abi Salah"
                   value={formFields.name || ""}
                   onChange={(e) =>
                     setFormFields({ ...formFields, name: e.target.value })
@@ -3148,7 +1906,7 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Base Salary">
                   <StyledInput
                     accentColor={activeColor}
@@ -3156,10 +1914,7 @@ export function FinancialLedgerView() {
                     placeholder="e.g. 3000"
                     value={formFields.baseSalary || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        baseSalary: e.target.value,
-                      })
+                      setFormFields({ ...formFields, baseSalary: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -3167,57 +1922,47 @@ export function FinancialLedgerView() {
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 500"
                     value={formFields.bonus || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        bonus: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Commission">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.commission || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        commission: e.target.value,
-                      })
+                      setFormFields({ ...formFields, bonus: Number(e.target.value) })
                     }
                   />
                 </FormField>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Commission">
+                  <StyledInput
+                    accentColor={activeColor}
+                    type="number"
+                    placeholder="e.g. 200"
+                    value={formFields.commission || ""}
+                    onChange={(e) =>
+                      setFormFields({ ...formFields, commission: Number(e.target.value) })
+                    }
+                  />
+                </FormField>
                 <FormField label="Allowance">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 150"
                     value={formFields.allowance || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        allowance: e.target.value,
-                      })
+                      setFormFields({ ...formFields, allowance: Number(e.target.value) })
                     }
                   />
                 </FormField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Overtime">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 0"
                     value={formFields.overtime || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        overtime: e.target.value,
-                      })
+                      setFormFields({ ...formFields, overtime: Number(e.target.value) })
                     }
                   />
                 </FormField>
@@ -3225,30 +1970,22 @@ export function FinancialLedgerView() {
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
-                    placeholder="0"
+                    placeholder="e.g. 100"
                     value={formFields.deductions || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        deductions: e.target.value,
-                      })
+                      setFormFields({ ...formFields, deductions: Number(e.target.value) })
                     }
                   />
                 </FormField>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
+                <FormField label="Period (YYYY-MM)">
+                  <StyledInput
                     accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
+                    placeholder="e.g. 2025-05"
+                    value={formFields.period || ""}
                     onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
+                      setFormFields({ ...formFields, period: e.target.value })
                     }
                   />
                 </FormField>
@@ -3263,223 +2000,6 @@ export function FinancialLedgerView() {
                     value={formFields.status || "Pending"}
                     onChange={(e) =>
                       setFormFields({ ...formFields, status: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Period">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. 2026-06"
-                    value={formFields.period || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, period: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Payment Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.paymentDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        paymentDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <FormField label="Notes">
-                <StyledTextArea
-                  accentColor={activeColor}
-                  placeholder="Additional notes..."
-                  value={formFields.notes || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, notes: e.target.value })
-                  }
-                />
-              </FormField>
-            </>
-          )}
-
-          {activeDomain === "gear" && (
-            <>
-              <FormField label="Gear Item Name">
-                <StyledInput
-                  accentColor={activeColor}
-                  placeholder="e.g. Sony FX3 Camera"
-                  value={formFields.name || ""}
-                  onChange={(e) =>
-                    setFormFields({ ...formFields, name: e.target.value })
-                  }
-                />
-              </FormField>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField label="Type">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Camera", label: "Camera" },
-                      { value: "Lens", label: "Lens" },
-                      { value: "Gimbal", label: "Gimbal" },
-                      { value: "Light", label: "Light" },
-                      { value: "Microphone", label: "Microphone" },
-                      { value: "Computer", label: "Computer" },
-                      { value: "StorageDevice", label: "Storage Device" },
-                      { value: "Drone", label: "Drone" },
-                      { value: "Monitor", label: "Monitor" },
-                      { value: "Tripod", label: "Tripod" },
-                    ]}
-                    value={formFields.type || "Camera"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, type: e.target.value })
-                    }
-                  />
-                </FormField>
-                <FormField label="Manufacturer">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. Sony"
-                    value={formFields.manufacturer || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        manufacturer: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Model">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. FX3"
-                    value={formFields.model || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, model: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Condition">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "Excellent", label: "Excellent" },
-                      { value: "Good", label: "Good" },
-                      { value: "Fair", label: "Fair" },
-                      { value: "NeedsRepair", label: "Needs Repair" },
-                      { value: "Retired", label: "Retired" },
-                    ]}
-                    value={formFields.condition || "Excellent"}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        condition: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Purchase Price">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    value={formFields.purchasePrice || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        purchasePrice: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Serial Number">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="SN-XXX-..."
-                    value={formFields.serialNumber || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        serialNumber: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Purchase Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.purchaseDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        purchaseDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Warranty Expiry">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.warrantyExpiry?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        warrantyExpiry: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Next Service Date">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="date"
-                    value={formFields.nextServiceDate?.split("T")[0] || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        nextServiceDate: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-                <FormField label="Total Maintenance Cost">
-                  <StyledInput
-                    accentColor={activeColor}
-                    type="number"
-                    placeholder="0"
-                    value={formFields.totalMaintenanceCost || ""}
-                    onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        totalMaintenanceCost: e.target.value,
-                      })
                     }
                   />
                 </FormField>
@@ -3509,43 +2029,40 @@ export function FinancialLedgerView() {
                   }
                 />
               </FormField>
+              <FormField label="Provider">
+                <StyledInput
+                  accentColor={activeColor}
+                  placeholder="e.g. Adobe"
+                  value={formFields.provider || ""}
+                  onChange={(e) =>
+                    setFormFields({ ...formFields, provider: e.target.value })
+                  }
+                />
+              </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Provider">
-                  <StyledInput
-                    accentColor={activeColor}
-                    placeholder="e.g. Adobe"
-                    value={formFields.provider || ""}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, provider: e.target.value })
-                    }
-                  />
-                </FormField>
                 <FormField label="Category">
                   <StyledInput
                     accentColor={activeColor}
-                    placeholder="e.g. Video Editing"
+                    placeholder="e.g. Editing Software"
                     value={formFields.category || ""}
                     onChange={(e) =>
                       setFormFields({ ...formFields, category: e.target.value })
                     }
                   />
                 </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Monthly Amount">
+                <FormField label="Monthly Cost">
                   <StyledInput
                     accentColor={activeColor}
                     type="number"
                     placeholder="e.g. 54.99"
                     value={formFields.monthlyAmount || ""}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        monthlyAmount: e.target.value,
-                      })
+                      setFormFields({ ...formFields, monthlyAmount: Number(e.target.value) })
                     }
                   />
                 </FormField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <FormField label="Billing Cycle">
                   <StyledSelect
                     accentColor={activeColor}
@@ -3556,27 +2073,7 @@ export function FinancialLedgerView() {
                     ]}
                     value={formFields.billingCycle || "Monthly"}
                     onChange={(e) =>
-                      setFormFields({
-                        ...formFields,
-                        billingCycle: e.target.value,
-                      })
-                    }
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Currency">
-                  <StyledSelect
-                    accentColor={activeColor}
-                    options={[
-                      { value: "USD", label: "USD ($)" },
-                      { value: "ETB", label: "ETB (Br)" },
-                      { value: "EUR", label: "EUR (€)" },
-                      { value: "GBP", label: "GBP (£)" },
-                    ]}
-                    value={formFields.currency || "USD"}
-                    onChange={(e) =>
-                      setFormFields({ ...formFields, currency: e.target.value })
+                      setFormFields({ ...formFields, billingCycle: e.target.value })
                     }
                   />
                 </FormField>
@@ -3601,10 +2098,7 @@ export function FinancialLedgerView() {
                   type="date"
                   value={formFields.renewalDate?.split("T")[0] || ""}
                   onChange={(e) =>
-                    setFormFields({
-                      ...formFields,
-                      renewalDate: e.target.value,
-                    })
+                    setFormFields({ ...formFields, renewalDate: e.target.value })
                   }
                 />
               </FormField>
@@ -3620,122 +2114,44 @@ export function FinancialLedgerView() {
               </FormField>
             </>
           )}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-3">
-            <ActionButton
-              label="Cancel"
-              variant="secondary"
-              onClick={() => setIsEditOpen(false)}
-            />
-            <ActionButton
-              label="Save Changes"
-              variant="primary"
-              accentColor={activeColor}
-              onClick={handleConfirmEdit}
-            />
-          </div>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/40 mt-5">
+          <ActionButton
+            onClick={() => setIsEditOpen(false)}
+            label="Cancel"
+            variant="secondary"
+          />
+          <ActionButton
+            onClick={handleConfirmEdit}
+            label="Save Changes"
+            variant="primary"
+            accentColor={activeColor}
+          />
         </div>
       </CrudModal>
 
-      {/* ─── DETAILS MODAL ─── */}
-      <DetailsModal
-        open={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-        title={
-          selectedRecord?.clientName ||
-          selectedRecord?.name ||
-          selectedRecord?.vendor ||
-          ""
-        }
-        subtitle={
-          selectedRecord?.eventName ||
-          selectedRecord?.role ||
-          selectedRecord?.category ||
-          ""
-        }
-        status={
-          selectedRecord?.status
-            ? {
-                label: selectedRecord.status,
-                color: activeColor,
-                bg: `${activeColor}20`,
-              }
-            : undefined
-        }
-        details={getDetailsModalProps().details}
-        accentColor={activeColor}
-        description={
-          activeDomain === "income"
-            ? selectedRecord?.description
-            : activeDomain === "expenses"
-              ? selectedRecord?.description
-              : activeDomain === "invoices"
-                ? `Invoice for ${selectedRecord?.clientName}`
-                : activeDomain === "editorPayments"
-                  ? `Payment for ${selectedRecord?.name}`
-                  : activeDomain === "payroll"
-                    ? `Payroll entry for ${selectedRecord?.name}`
-                    : activeDomain === "gear"
-                      ? `Gear maintenance record for ${selectedRecord?.name}`
-                      : activeDomain === "subscriptions"
-                        ? `Subscription for ${selectedRecord?.name}`
-                        : undefined
-        }
-      />
-
-      {/* ─── DELETE MODAL ─── */}
+      {/* DELETE CONFIRMATION MODAL */}
       <ConfirmDeleteModal
         open={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
-        itemName={
-          activeDomain === "income"
-            ? selectedRecord?.eventName
-            : activeDomain === "expenses"
-              ? selectedRecord?.vendor
-              : activeDomain === "invoices"
-                ? `Invoice #${selectedRecord?.invoiceNumber}`
-                : activeDomain === "editorPayments"
-                  ? selectedRecord?.name
-                  : activeDomain === "payroll"
-                    ? selectedRecord?.name
-                    : activeDomain === "gear"
-                      ? selectedRecord?.name
-                      : activeDomain === "subscriptions"
-                        ? selectedRecord?.name
-                        : ""
-        }
+        title={`Delete ${humanize(activeDomain)} Record`}
+        message={`Are you sure you want to delete this ${activeDomain} record? This action cannot be undone.`}
+        itemName={selectedRecord?.clientName || selectedRecord?.vendor || selectedRecord?.name}
+      />
+
+      {/* DETAILS MODAL */}
+      <DetailsModal
+        open={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        title={getDetailsModalProps().title}
+        subtitle={getDetailsModalProps().subtitle}
+        status={getDetailsModalProps().status}
+        details={getDetailsModalProps().details}
+        accentColor={activeColor}
+        description={getDetailsModalProps().description}
       />
     </div>
   );
 }
-
-// Add missing imports
-const Heart = (props: any) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="1em"
-    height="1em"
-    viewBox="0 0 24 24"
-    {...props}
-  >
-    <path
-      fill="currentColor"
-      d="m12.1 21.35l-.1.1l-.11-.1C7.14 18.24 3 15.36 3 10.5C3 7.77 5.24 5.5 8 5.5c1.64 0 3.14.98 3.76 2.44C12.87 6.47 14.36 5.5 16 5.5c2.76 0 5 2.27 5 5c0 4.86-4.14 7.74-8.9 10.85"
-    ></path>
-  </svg>
-);
-const Pin = (props: any) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="1em"
-    height="1em"
-    viewBox="0 0 24 24"
-    {...props}
-  >
-    <path
-      fill="currentColor"
-      d="M17 4V2H7v2H5l2 2.18V12l3 3v7h4v-7l3-3V6.18L19 4zm-3 4.71L13 12v6h-2v-6L10 8.71V6h4z"
-    ></path>
-  </svg>
-);

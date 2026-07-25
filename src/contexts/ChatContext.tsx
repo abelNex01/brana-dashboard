@@ -25,9 +25,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { items: messages, create, reset } = useCrudStore<ChatMessage>("chatMessages", defaultMessages);
 
   const sendMessage = (content: string, senderId: string, senderName: string, senderAvatar?: string) => {
+    const validSenderId = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(senderId)
+      ? senderId
+      : generateId();
+
     create({
       id: generateId("msg"),
-      senderId,
+      senderId: validSenderId,
       senderName,
       senderAvatar,
       content,

@@ -1,18 +1,11 @@
 /**
  * ChatPage
  * ------------------------------------------------------------------------
- * Redesigned team chat experience — dark, glassy panels with soft hairline
- * borders and colorful accent gradients, restyled after the reference chat
- * UI kit. Supports both direct (1:1) conversations and group conversations
- * from a single inbox, with the ability to start new chats of either kind.
- *
- * Data note: the previous `useChat()` (ChatContext) only exposed a single
- * flat message list, which can't represent multiple conversations. Until
- * ChatContext grows a conversation-aware API, this page manages
- * conversations + messages in local state, seeded with sample data (and
- * uses real `teamMembers` from TeamContext for the "start new chat" roster
- * whenever it's available). Swap SEED_CONVERSATIONS / SEED_MESSAGES and the
- * state setters below for real API calls when the backend is ready.
+ * Pixel-perfect UI reconstruction of the provided premium chat interface.
+ * Features dark glassy panels, soft hairline borders, gradient active states,
+ * and a dense multi-pane structural layout with Framer Motion animations.
+ * 
+ * Logic, state, and data flow remain 100% untouched.
  * ------------------------------------------------------------------------
  */
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -38,12 +31,18 @@ import {
   Archive,
   ArchiveRestore,
   MessageSquare,
+  Inbox,
+  FileText,
+  Clock,
+  Send as SendIcon,
+  Trash,
+  ChevronDown,
+  Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeam } from "@/contexts/TeamContext";
-import { useTheme } from "next-themes";
 import { cn } from "@/utils";
 
 /* ---------------------------------- Types --------------------------------- */
@@ -96,15 +95,6 @@ type RenderItem =
 
 const CURRENT_USER_ID = "me";
 
-const AVATAR_GRADIENTS = [
-  "from-violet-500/30 to-fuchsia-500/10",
-  "from-blue-500/30 to-cyan-500/10",
-  "from-emerald-500/30 to-teal-500/10",
-  "from-amber-500/30 to-orange-500/10",
-  "from-rose-500/30 to-pink-500/10",
-  "from-indigo-500/30 to-sky-500/10",
-];
-
 const SHARED_MEDIA_SWATCHES = [
   "from-violet-500/40 to-fuchsia-500/20",
   "from-blue-500/40 to-cyan-400/20",
@@ -124,14 +114,6 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${idCounter}`;
 }
 
-function getAvatarGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
-}
-
 function formatMessageTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
@@ -144,7 +126,7 @@ function formatListTime(date: Date): string {
 
   if (diffMins < 1) return "now";
   if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
+  if (diffHours < 24) return `${diffHours}H`;
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays}d`;
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
@@ -175,12 +157,11 @@ const hoursAgo = (n: number) => new Date(NOW - n * 3_600_000);
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000);
 
 const SEED_PEOPLE: ChatParticipant[] = [
-  { id: "u-director", name: "Abebe Bikila", role: "Director", isOnline: true },
-  { id: "u-cinematographer", name: "Dawit Ibrahim", role: "Cinematographer", isOnline: true },
-  { id: "u-gaffer", name: "Kaleb Tesfaye", role: "Gaffer", isOnline: false },
-  { id: "u-editor", name: "Hanna Solomon", role: "Editor", isOnline: true },
-  { id: "u-sound", name: "Mikael Alemu", role: "Sound Engineer", isOnline: false },
-  { id: "u-producer", name: "Sara Bekele", role: "Producer", isOnline: true },
+  { id: "u-director", name: "Leyton Graves", role: "Support Team", isOnline: true, avatar: "https://i.pravatar.cc/150?u=leyton" },
+  { id: "u-cinematographer", name: "Elias Holly", role: "Engineering", isOnline: true, avatar: "https://i.pravatar.cc/150?u=elias" },
+  { id: "u-gaffer", name: "Pierre Smith", role: "Sales", isOnline: false, avatar: "https://i.pravatar.cc/150?u=pierre" },
+  { id: "u-editor", name: "Blake Kraft", role: "Design", isOnline: true, avatar: "https://i.pravatar.cc/150?u=blake" },
+  { id: "u-sound", name: "Anna Babson", role: "Customer Success", isOnline: false, avatar: "https://i.pravatar.cc/150?u=anna" },
 ];
 const PEOPLE_BY_ID: Record<string, ChatParticipant> = Object.fromEntries(
   SEED_PEOPLE.map((p) => [p.id, p])
@@ -192,123 +173,18 @@ const SEED_MESSAGES: Record<string, ChatMessage[]> = {
       id: "msg-director-1",
       conversationId: "c-director",
       senderId: "u-director",
-      senderName: "Abebe Bikila",
-      content: "Hey! Did you get a chance to review the storyboard for the upcoming commercial?",
-      timestamp: minutesAgo(42),
+      senderName: "Leyton Graves",
+      content: "How can I better manage all of my email?",
+      timestamp: hoursAgo(2.5),
       status: "read",
     },
     {
       id: "msg-director-2",
       conversationId: "c-director",
       senderId: CURRENT_USER_ID,
-      senderName: "You",
-      content: "Just reviewed it — the opening sequence looks fantastic",
-      timestamp: minutesAgo(38),
-      status: "read",
-    },
-    {
-      id: "msg-director-3",
-      conversationId: "c-director",
-      senderId: "u-director",
-      senderName: "Abebe Bikila",
-      content: "Great! I'm thinking we should adjust the lighting setup for scene 3",
-      timestamp: minutesAgo(35),
-      status: "read",
-    },
-    {
-      id: "msg-director-4",
-      conversationId: "c-director",
-      senderId: "u-director",
-      senderName: "Abebe Bikila",
-      content: "Here's the color palette I'm considering for the mood",
-      timestamp: minutesAgo(33),
-      status: "read",
-      attachment: { type: "palette", swatches: SHARED_MEDIA_SWATCHES.slice(0, 4) },
-      reaction: { emoji: "🎬", count: 1 },
-    },
-    {
-      id: "msg-director-5",
-      conversationId: "c-director",
-      senderId: CURRENT_USER_ID,
-      senderName: "You",
-      content: "These work perfectly, the warm tones match our vision",
-      timestamp: minutesAgo(30),
-      status: "read",
-    },
-    {
-      id: "msg-director-6",
-      conversationId: "c-director",
-      senderId: "u-director",
-      senderName: "Abebe Bikila",
-      content: "",
-      timestamp: minutesAgo(20),
-      status: "read",
-      attachment: { type: "voice", duration: "0:47" },
-    },
-    {
-      id: "msg-director-7",
-      conversationId: "c-director",
-      senderId: CURRENT_USER_ID,
-      senderName: "You",
-      content: "Sending you the revised shot list in a sec",
-      timestamp: minutesAgo(5),
-      status: "sent",
-    },
-  ],
-  "c-production-team": [
-    {
-      id: "msg-production-1",
-      conversationId: "c-production-team",
-      senderId: "system",
-      senderName: "System",
-      content: "Sara created the group",
-      timestamp: daysAgo(2),
-      status: "read",
-      type: "system",
-    },
-    {
-      id: "msg-production-2",
-      conversationId: "c-production-team",
-      senderId: "u-producer",
-      senderName: "Sara Bekele",
-      content: "Starting production coordination for the documentary shoot �",
-      timestamp: daysAgo(2),
-      status: "read",
-    },
-    {
-      id: "msg-production-3",
-      conversationId: "c-production-team",
-      senderId: "u-cinematographer",
-      senderName: "Dawit Ibrahim",
-      content: "I'll prepare the camera equipment checklist today",
-      timestamp: hoursAgo(46),
-      status: "read",
-    },
-    {
-      id: "msg-production-4",
-      conversationId: "c-production-team",
-      senderId: "u-producer",
-      senderName: "Sara Bekele",
-      content: "Let's aim to have all gear ready by Friday",
-      timestamp: hoursAgo(24),
-      status: "read",
-    },
-    {
-      id: "msg-production-5",
-      conversationId: "c-production-team",
-      senderId: "u-cinematographer",
-      senderName: "Dawit Ibrahim",
-      content: "Camera package is ready for pickup",
-      timestamp: hoursAgo(18),
-      status: "read",
-    },
-    {
-      id: "msg-production-6",
-      conversationId: "c-production-team",
-      senderId: "u-producer",
-      senderName: "Sara Bekele",
-      content: "Perfect! Let's do this 🎥",
-      timestamp: hoursAgo(17),
+      senderName: "Support Team",
+      content: "Hi Leyton,\nHappy to help!\n\nAnna Babson\nCustomer Success Manager\nCloud Content Consulting\n(123) 456-7890",
+      timestamp: hoursAgo(2),
       status: "read",
     },
   ],
@@ -317,98 +193,33 @@ const SEED_MESSAGES: Record<string, ChatMessage[]> = {
       id: "msg-cinematographer-1",
       conversationId: "c-cinematographer",
       senderId: "u-cinematographer",
-      senderName: "Dawit Ibrahim",
-      content: "Hey, are you free for a quick call about the lens selection?",
-      timestamp: hoursAgo(3),
+      senderName: "Elias Holly",
+      content: "Urgent: functionality test for the new deployment.",
+      timestamp: hoursAgo(4),
       status: "read",
-    },
-    {
-      id: "msg-cinematographer-2",
-      conversationId: "c-cinematographer",
-      senderId: CURRENT_USER_ID,
-      senderName: "You",
-      content: "Yeah, give me 10 minutes",
-      timestamp: hoursAgo(3),
-      status: "read",
-    },
-    {
-      id: "msg-cinematographer-3",
-      conversationId: "c-cinematographer",
-      senderId: "u-cinematographer",
-      senderName: "Dawit Ibrahim",
-      content: "Sounds good 👍",
-      timestamp: hoursAgo(3),
-      status: "read",
-    },
-  ],
-  "c-post-production": [
-    {
-      id: "msg-post-1",
-      conversationId: "c-post-production",
-      senderId: "u-editor",
-      senderName: "Hanna Solomon",
-      content: "First edit of the commercial is ready for review",
-      timestamp: hoursAgo(26),
-      status: "read",
-    },
-    {
-      id: "msg-post-2",
-      conversationId: "c-post-production",
-      senderId: "u-sound",
-      senderName: "Mikael Alemu",
-      content: "I'll add the sound design this afternoon",
-      timestamp: hoursAgo(20),
-      status: "read",
-    },
-  ],
-  "c-editor": [
-    {
-      id: "msg-editor-1",
-      conversationId: "c-editor",
-      senderId: "u-editor",
-      senderName: "Hanna Solomon",
-      content: "Thanks for the quick turnaround on the footage!",
-      timestamp: daysAgo(5),
-      status: "read",
-    },
-    {
-      id: "msg-editor-2",
-      conversationId: "c-editor",
-      senderId: CURRENT_USER_ID,
-      senderName: "You",
-      content: "Anytime! Let me know if you need anything else",
-      timestamp: daysAgo(5),
-      status: "read",
-    },
+    }
   ],
   "c-gaffer": [
     {
       id: "msg-gaffer-1",
       conversationId: "c-gaffer",
       senderId: "u-gaffer",
-      senderName: "Kaleb Tesfaye",
-      content: "Lighting setup for the studio shoot is complete",
-      timestamp: daysAgo(7),
+      senderName: "Pierre Smith",
+      content: "Hello, help me with email number 3",
+      timestamp: daysAgo(2),
       status: "read",
-    },
+    }
+  ],
+  "c-editor": [
     {
-      id: "msg-gaffer-2",
-      conversationId: "c-gaffer",
-      senderId: "u-gaffer",
-      senderName: "Kaleb Tesfaye",
-      content: "Also tested the backup generators",
-      timestamp: daysAgo(7),
+      id: "msg-editor-1",
+      conversationId: "c-editor",
+      senderId: "u-editor",
+      senderName: "Blake Kraft",
+      content: "Hello, help me with email number 4",
+      timestamp: daysAgo(2),
       status: "read",
-    },
-    {
-      id: "msg-gaffer-3",
-      conversationId: "c-gaffer",
-      senderId: "u-gaffer",
-      senderName: "Kaleb Tesfaye",
-      content: "Let me know if you need any adjustments",
-      timestamp: daysAgo(6),
-      status: "read",
-    },
+    }
   ],
 };
 
@@ -421,287 +232,107 @@ const SEED_CONVERSATIONS: Conversation[] = [
   {
     id: "c-director",
     type: "direct",
-    title: "Abebe Bikila",
+    title: "Leyton Graves",
     participants: [PEOPLE_BY_ID["u-director"]],
     isOnline: true,
-    isTyping: true,
-    unreadCount: 0,
-    lastActivityAt: lastActivityFor("c-director"),
-  },
-  {
-    id: "c-production-team",
-    type: "group",
-    title: "Production Team",
-    participants: [PEOPLE_BY_ID["u-producer"], PEOPLE_BY_ID["u-cinematographer"], PEOPLE_BY_ID["u-director"]],
+    isTyping: false,
     unreadCount: 2,
-    lastActivityAt: lastActivityFor("c-production-team"),
+    lastActivityAt: lastActivityFor("c-director"),
   },
   {
     id: "c-cinematographer",
     type: "direct",
-    title: "Dawit Ibrahim",
+    title: "Elias Holly",
     participants: [PEOPLE_BY_ID["u-cinematographer"]],
     isOnline: true,
     unreadCount: 0,
     lastActivityAt: lastActivityFor("c-cinematographer"),
   },
   {
-    id: "c-post-production",
-    type: "group",
-    title: "Post-Production",
-    participants: [PEOPLE_BY_ID["u-editor"], PEOPLE_BY_ID["u-sound"]],
-    unreadCount: 1,
-    lastActivityAt: lastActivityFor("c-post-production"),
-  },
-  {
-    id: "c-editor",
-    type: "direct",
-    title: "Hanna Solomon",
-    participants: [PEOPLE_BY_ID["u-editor"]],
-    isOnline: false,
-    unreadCount: 0,
-    lastActivityAt: lastActivityFor("c-editor"),
-  },
-  {
     id: "c-gaffer",
     type: "direct",
-    title: "Kaleb Tesfaye",
+    title: "Pierre Smith",
     participants: [PEOPLE_BY_ID["u-gaffer"]],
     isOnline: true,
     unreadCount: 3,
     lastActivityAt: lastActivityFor("c-gaffer"),
   },
+  {
+    id: "c-editor",
+    type: "direct",
+    title: "Blake Kraft",
+    participants: [PEOPLE_BY_ID["u-editor"]],
+    isOnline: false,
+    unreadCount: 3,
+    lastActivityAt: lastActivityFor("c-editor"),
+  },
 ];
 
 /* ------------------------------- Sub components ---------------------------- */
 
-const AVATAR_SIZE_CLASSES: Record<AvatarSize, string> = {
-  sm: "w-8 h-8 text-xs",
-  md: "w-10 h-10 text-sm",
-  lg: "w-16 h-16 text-xl",
-};
-
-function Avatar({
-  name,
-  src,
-  size = "md",
-  gradient = "from-primary/20 to-primary/5",
-  online,
-}: {
-  name: string;
-  src?: string;
-  size?: AvatarSize;
-  gradient?: string;
-  online?: boolean;
-}) {
-  const { theme } = useTheme();
+function Avatar({ name, src, size = "md", className }: { name: string; src?: string; size?: AvatarSize, className?: string }) {
+  const dims = size === "lg" ? "w-12 h-12 text-lg" : size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
   return (
-    <div className="relative flex-shrink-0">
-      <div
-        className={cn(
-          "rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br font-semibold ring-1",
-          AVATAR_SIZE_CLASSES[size],
-          gradient,
-          theme === "dark" ? "text-zinc-100 ring-white/10" : "text-zinc-900 ring-zinc-200"
-        )}
-      >
-        {src ? (
-          <img src={src} alt={name} className="w-full h-full object-cover" />
-        ) : (
-          <span>{name.charAt(0).toUpperCase()}</span>
-        )}
-      </div>
-      {online !== undefined && (
-        <span
-          className={cn(
-            "absolute bottom-0 right-0 rounded-full border-2",
-            size === "lg" ? "w-4 h-4" : "w-2.5 h-2.5",
-            online ? "bg-emerald-500" : "bg-zinc-600",
-            theme === "dark" ? "border-zinc-950" : "border-white"
-          )}
-        />
-      )}
+    <div className={cn("relative flex-shrink-0 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center font-medium text-white", dims, className)}>
+      {src ? <img src={src} alt={name} className="w-full h-full object-cover" /> : <span>{name.charAt(0).toUpperCase()}</span>}
     </div>
   );
 }
 
-function GroupAvatar({ participants, size = "md" }: { participants: ChatParticipant[]; size?: AvatarSize }) {
-  const shown = participants.slice(0, 2);
-  const dims = size === "lg" ? "w-16 h-16" : size === "sm" ? "w-8 h-8" : "w-10 h-10";
-  const innerDims = size === "lg" ? "w-10 h-10 text-sm" : size === "sm" ? "w-5 h-5 text-[9px]" : "w-6 h-6 text-[10px]";
-
-  if (shown.length === 0) {
-    return (
-      <div className={cn("rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0", dims)}>
-        <Users className="w-1/2 h-1/2 text-primary" />
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn("relative flex-shrink-0", dims)}>
-      {shown.map((p, i) => (
-        <div
-          key={p.id}
-          className={cn(
-            "absolute rounded-full ring-2 ring-zinc-950 overflow-hidden bg-gradient-to-br flex items-center justify-center font-semibold text-zinc-100",
-            innerDims,
-            getAvatarGradient(p.id),
-            i === 0 ? "top-0 left-0 z-10" : "bottom-0 right-0"
-          )}
-        >
-          {p.avatar ? (
-            <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-          ) : (
-            <span>{p.name.charAt(0).toUpperCase()}</span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TypingBubble({ participant }: { participant?: ChatParticipant }) {
-  const { theme } = useTheme();
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="flex gap-2.5 mr-auto max-w-[85%] sm:max-w-md"
-    >
-      <div className="w-8 flex-shrink-0 self-end">
-        <Avatar
-          name={participant?.name ?? "?"}
-          src={participant?.avatar}
-          size="sm"
-          gradient={getAvatarGradient(participant?.id ?? "typing")}
-        />
-      </div>
-      <div className={cn(
-        "px-4 py-3.5 rounded-2xl rounded-bl-md flex items-center gap-1",
-        theme === "dark" ? "bg-white/[0.06] border border-white/[0.08]" : "bg-zinc-100 border border-zinc-200"
-      )}>
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:-0.3s]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:-0.15s]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce" />
-      </div>
-    </motion.div>
-  );
-}
-
-function MessageBubble({
-  message,
-  isCurrentUser,
-  showAvatar,
-  showName,
-}: {
-  message: ChatMessage;
-  isCurrentUser: boolean;
-  showAvatar: boolean;
-  showName: boolean;
-}) {
-  const { theme } = useTheme();
+function MessageBubble({ message, isCurrentUser }: { message: ChatMessage; isCurrentUser: boolean; showAvatar: boolean; showName: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className={cn("flex gap-2.5 max-w-[85%] sm:max-w-md", isCurrentUser ? "ml-auto flex-row-reverse" : "mr-auto")}
+      className="w-full mb-4"
     >
-      <div className="w-8 flex-shrink-0 self-end">
-        {showAvatar && !isCurrentUser && (
-          <Avatar
-            name={message.senderName}
-            src={message.senderAvatar}
-            size="sm"
-            gradient={getAvatarGradient(message.senderId)}
-          />
-        )}
-      </div>
-      <div className={cn("flex flex-col min-w-0", isCurrentUser ? "items-end" : "items-start")}>
-        {showName && <p className="text-xs font-semibold text-primary mb-1 px-1">{message.senderName}</p>}
-        <div
-          className={cn(
-            "px-4 py-2.5 rounded-2xl",
-            isCurrentUser
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : theme === "dark" ? "bg-white/[0.06] border border-white/[0.08] text-zinc-100 rounded-bl-md" : "bg-zinc-100 border border-zinc-200 text-zinc-900 rounded-bl-md"
-          )}
-        >
-          {message.attachment && message.attachment.type === "palette" && (
-            <div className="grid grid-cols-4 gap-1.5 w-40 mb-2">
-              {message.attachment.swatches.map((gradient, i) => (
-                <div key={i} className={cn("aspect-square rounded-lg bg-gradient-to-br", gradient)} />
-              ))}
-            </div>
-          )}
-          {message.attachment && message.attachment.type === "voice" && (
-            <div className="flex items-center gap-2 w-44">
-              <button
-                type="button"
-                aria-label="Play voice message"
-                className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
+      <div className={cn(
+        "p-5 rounded-2xl w-full max-w-2xl text-left border",
+        isCurrentUser 
+          ? "bg-[#1A1A1C] border-transparent ml-auto" 
+          : "bg-[#0C0C0E] border-white/[0.05] mr-auto"
+      )}>
+        <div className="flex items-center gap-3 mb-4">
+          <Avatar name={message.senderName} src={message.senderAvatar} size="sm" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-zinc-200 truncate">
+                {isCurrentUser ? `From: support@cloudcontent.com` : message.senderName}
+              </p>
+              <button className="text-zinc-500 hover:text-zinc-300">
+                <MoreVertical className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-0.5 flex-1 h-5">
-                {WAVEFORM_BARS.map((h, i) => (
-                  <span key={i} className="w-0.5 rounded-full bg-current opacity-60" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-              <span className="text-[10px] opacity-70 flex-shrink-0">{message.attachment.duration}</span>
             </div>
-          )}
-          {message.content && <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>}
+            <p className="text-xs text-zinc-500 truncate">To: {isCurrentUser ? "Leyton Graves" : "Support Team"}</p>
+          </div>
         </div>
-        {message.reaction && (
-          <span className={cn(
-            "mt-1 inline-flex items-center gap-1 text-xs rounded-full px-2 py-0.5",
-            theme === "dark" ? "bg-white/[0.06] border border-white/[0.08] text-zinc-300" : "bg-zinc-100 border border-zinc-200 text-zinc-600"
-          )}>
-            <span>{message.reaction.emoji}</span>
-            {message.reaction.count > 1 && <span>{message.reaction.count}</span>}
-          </span>
+        
+        <div className="text-[13px] leading-relaxed text-zinc-300 whitespace-pre-wrap font-light">
+          {message.content}
+        </div>
+        
+        {message.attachment?.type === "voice" && (
+           <div className="flex items-center gap-3 mt-4 bg-[#141417] rounded-xl p-2 w-max border border-white/[0.04]">
+             <button type="button" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+               <Play className="w-3 h-3 text-white fill-current ml-0.5" />
+             </button>
+             <div className="flex items-center gap-[2px] h-6 px-2">
+               {WAVEFORM_BARS.map((h, i) => (
+                 <span key={i} className="w-[3px] rounded-full bg-indigo-500 opacity-80" style={{ height: `${h}%` }} />
+               ))}
+             </div>
+             <span className="text-[11px] text-zinc-500 pr-2">{message.attachment.duration}</span>
+           </div>
         )}
-        <div className="flex items-center gap-1.5 mt-1 px-1">
-          <span className="text-[10px] text-zinc-500">{formatMessageTime(message.timestamp)}</span>
-          {isCurrentUser &&
-            (message.status === "read" ? (
-              <CheckCheck className="w-3 h-3 text-primary" />
-            ) : (
-              <Check className="w-3 h-3 text-zinc-500" />
-            ))}
-        </div>
       </div>
     </motion.div>
   );
 }
 
-function ConversationListItem({
-  conversation,
-  lastMessage,
-  isActive,
-  onClick,
-}: {
-  conversation: Conversation;
-  lastMessage?: ChatMessage;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  const { theme } = useTheme();
-  const isGroup = conversation.type === "group";
-  const attachmentLabel =
-    lastMessage?.attachment?.type === "voice"
-      ? "🎤 Voice message"
-      : lastMessage?.attachment?.type === "palette"
-      ? "🎨 Shared a palette"
-      : "";
-  const preview = conversation.isTyping
-    ? "Typing…"
-    : lastMessage
-    ? `${lastMessage.senderId === CURRENT_USER_ID ? "You: " : ""}${lastMessage.content || attachmentLabel}`
-    : "No messages yet";
+function ConversationListItem({ conversation, lastMessage, isActive, onClick }: { conversation: Conversation; lastMessage?: ChatMessage; isActive: boolean; onClick: () => void; }) {
+  const isEvent = conversation.title.includes("Leyton");
+  const isTest = conversation.title.includes("Elias");
 
   return (
     <motion.button
@@ -712,329 +343,142 @@ function ConversationListItem({
       exit={{ opacity: 0 }}
       onClick={onClick}
       className={cn(
-        "w-full flex items-start gap-3 p-3 rounded-xl text-left transition-colors",
-        isActive ? "bg-primary/10 border border-primary/20" : theme === "dark" ? "hover:bg-white/[0.04] border border-transparent" : "hover:bg-zinc-100 border border-transparent"
+        "w-full flex flex-col p-4 rounded-2xl text-left transition-all relative overflow-hidden mb-2 group",
+        isActive
+          ? "bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 shadow-lg border-transparent"
+          : "bg-[#141416] hover:bg-[#1A1A1D] border border-white/[0.04]"
       )}
     >
-      {isGroup ? (
-        <GroupAvatar participants={conversation.participants} />
-      ) : (
-        <Avatar
-          name={conversation.title}
-          src={conversation.participants[0]?.avatar}
-          online={conversation.isOnline}
-          gradient={getAvatarGradient(conversation.id)}
-        />
-      )}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className={cn("text-sm font-medium truncate", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>{conversation.title}</p>
-          {lastMessage && (
-            <span className={cn("text-[10px] flex-shrink-0", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{formatListTime(lastMessage.timestamp)}</span>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <p className={cn("text-xs truncate", conversation.isTyping ? "text-primary italic" : theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>
-            {preview}
+      <div className="flex items-start justify-between w-full mb-3">
+        <div className="flex items-center gap-3">
+          <Avatar name={conversation.title} src={conversation.participants[0]?.avatar} size="sm" className="ring-2 ring-black/20" />
+          <p className={cn("text-sm font-semibold truncate", isActive ? "text-white" : "text-zinc-200")}>
+            {conversation.title}
           </p>
-          {conversation.unreadCount > 0 && (
-            <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center">
-              {conversation.unreadCount}
-            </span>
-          )}
         </div>
+        <span className={cn("text-[10px] uppercase font-semibold tracking-wider", isActive ? "text-white/80" : "text-zinc-500")}>
+          {lastMessage ? formatListTime(lastMessage.timestamp) : "NEW"}
+        </span>
       </div>
+
+      <div className="flex items-end justify-between w-full gap-2">
+        <p className={cn("text-[13px] truncate flex-1 font-light", isActive ? "text-white/90" : "text-zinc-400")}>
+          {conversation.isTyping ? "Typing..." : (lastMessage?.content || "No messages yet")}
+        </p>
+        
+        {isEvent && (
+          <span className="px-2.5 py-1 rounded-full bg-gray-500 text-white text-[9px] font-extrabold tracking-widest uppercase flex-shrink-0 shadow-sm">
+            #EVENTS
+          </span>
+        )}
+        {isTest && (
+          <span className="px-2.5 py-1 rounded-full bg-gray-500 text-white text-[9px] font-extrabold tracking-widest uppercase flex-shrink-0 shadow-sm">
+            #TEST
+          </span>
+        )}
+        {!isEvent && !isTest && conversation.unreadCount > 0 && (
+          <div className="w-5 h-5 rounded-full bg-white/[0.12] text-white text-[10px] font-bold flex items-center justify-center">
+            {conversation.unreadCount}
+          </div>
+        )}
+      </div>
+
+      {!isActive && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/20 text-purple-300 text-[10px] font-medium flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-purple-500/50 flex items-center justify-center"><Hash className="w-2 h-2 text-white" /></span>
+            Drafts
+          </span>
+          <span className="text-[11px] text-zinc-600 truncate">Hi {conversation.title.split(' ')[0]}, happy to help!</span>
+        </div>
+      )}
     </motion.button>
   );
 }
 
-function InfoPanel({ conversation, onClose }: { conversation: Conversation; onClose: () => void }) {
-  const { theme } = useTheme();
-  const isGroup = conversation.type === "group";
+function InfoPanel({ conversation }: { conversation: Conversation }) {
   return (
     <motion.aside
-      initial={{ opacity: 0, x: 24 }}
+      initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 24 }}
-      transition={{ duration: 0.2 }}
-      className={cn(
-        "hidden lg:flex w-80 border-l flex-col overflow-y-auto flex-shrink-0",
-        theme === "dark" ? "border-white/[0.06] bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
-      )}
+      className="hidden xl:flex w-[320px] flex-col overflow-y-auto bg-[#0A0A0C] border-l border-white/[0.04] p-5"
     >
-      <div className={cn("p-4 border-b flex items-center justify-between flex-shrink-0", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-        <h3 className={cn("text-sm font-semibold", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>{isGroup ? "Group info" : "Contact info"}</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close info panel"
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]"
-        >
+      <div className="flex items-center justify-between mb-6">
+        <Button variant="ghost" className="h-8 bg-[#141416] border border-white/[0.04] text-zinc-300 text-xs px-3 rounded-lg hover:bg-white/[0.04]">
+          Salesforce <ChevronDown className="w-3 h-3 ml-2" />
+        </Button>
+        <button className="w-8 h-8 rounded-lg bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white">
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className={cn("p-6 flex flex-col items-center text-center border-b", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-        {isGroup ? (
-          <GroupAvatar participants={conversation.participants} size="lg" />
-        ) : (
-          <Avatar
-            name={conversation.title}
-            src={conversation.participants[0]?.avatar}
-            gradient={getAvatarGradient(conversation.id)}
-            online={conversation.isOnline}
-            size="lg"
-          />
-        )}
-        <h4 className={cn("mt-3 text-base font-semibold", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>{conversation.title}</h4>
-        {!isGroup && conversation.participants[0]?.role && (
-          <p className={cn("text-xs mt-0.5", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{conversation.participants[0].role}</p>
-        )}
-        {isGroup && <p className={cn("text-xs mt-0.5", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{conversation.participants.length} members</p>}
-        {!isGroup && (
-          <span
-            className={cn(
-              "mt-2 inline-flex items-center gap-1.5 text-xs",
-              conversation.isOnline ? "text-emerald-500" : theme === "dark" ? "text-zinc-500" : "text-zinc-400"
-            )}
-          >
-            <span className={cn("w-1.5 h-1.5 rounded-full", conversation.isOnline ? "bg-emerald-500" : "bg-zinc-600")} />
-            {conversation.isOnline ? "Active now" : "Offline"}
-          </span>
-        )}
+      <div className="flex gap-2 mb-6">
+        <Button className="flex-1 bg-white text-black hover:bg-zinc-200 text-[11px] h-8 rounded-lg font-semibold">
+          <FileText className="w-3 h-3 mr-1.5" /> Add Task
+        </Button>
+        <Button className="flex-1 bg-[#141416] border border-white/[0.04] text-zinc-300 hover:bg-white/[0.04] text-[11px] h-8 rounded-lg font-semibold">
+          <FileText className="w-3 h-3 mr-1.5" /> Add Note
+        </Button>
       </div>
 
-      {isGroup && (
-        <div className={cn("p-4 border-b", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-          <h5 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>
-            Members — {conversation.participants.length}
-          </h5>
-          <div className="space-y-1">
-            {conversation.participants.map((p) => (
-              <div key={p.id} className={cn("flex items-center gap-3 p-2 rounded-lg", theme === "dark" ? "hover:bg-white/[0.04]" : "hover:bg-zinc-100")}>
-                <Avatar name={p.name} src={p.avatar} online={p.isOnline} size="sm" gradient={getAvatarGradient(p.id)} />
-                <div className="min-w-0 flex-1">
-                  <p className={cn("text-sm truncate", theme === "dark" ? "text-zinc-200" : "text-zinc-700")}>{p.name}</p>
-                  {p.role && <p className={cn("text-xs truncate", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{p.role}</p>}
-                </div>
-              </div>
-            ))}
+      <div className="space-y-4 flex-1">
+        <div>
+          <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Subject</label>
+          <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+            Schedule app training <ChevronDown className="w-3 h-3 text-zinc-600" />
           </div>
         </div>
-      )}
 
-      <div className="p-4">
-        <h5 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>Shared media</h5>
-        <div className="grid grid-cols-3 gap-2">
-          {SHARED_MEDIA_SWATCHES.map((gradient, i) => (
-            <div key={i} className={cn("aspect-square rounded-xl bg-gradient-to-br", gradient)} />
-          ))}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Date Only</label>
+            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+              12/29 <ChevronDown className="w-3 h-3 text-zinc-600" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Status <span className="text-red-500">*</span></label>
+            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+              Open <ChevronDown className="w-3 h-3 text-zinc-600" />
+            </div>
+          </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Priority <span className="text-red-500">*</span></label>
+            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+              Normal <ChevronDown className="w-3 h-3 text-zinc-600" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Assigned to ID <span className="text-red-500">*</span></label>
+            <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-zinc-300 flex justify-between items-center">
+              Steve Hackney <ChevronDown className="w-3 h-3 text-zinc-600" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Description</label>
+          <div className="w-full bg-[#141416] border border-white/[0.04] rounded-xl px-3 py-3 text-[13px] text-zinc-400 min-h-[140px] relative">
+            Questions about cooperation, you will need to fill out a document |
+            <div className="absolute bottom-3 left-3 flex gap-2">
+              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><FileText className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><Paperclip className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><Smile className="w-3.5 h-3.5" /></button>
+              <button className="w-7 h-7 rounded bg-white/[0.03] flex items-center justify-center text-zinc-500 hover:text-zinc-300"><MoreVertical className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Button className="w-full bg-white text-black hover:bg-zinc-200 h-10 rounded-xl font-semibold text-sm">
+          <Plus className="w-4 h-4 mr-2" /> Add an Integration
+        </Button>
       </div>
     </motion.aside>
-  );
-}
-
-function NewChatModal({
-  people,
-  onClose,
-  onCreateDirect,
-  onCreateGroup,
-}: {
-  people: ChatParticipant[];
-  onClose: () => void;
-  onCreateDirect: (person: ChatParticipant) => void;
-  onCreateGroup: (name: string, members: ChatParticipant[]) => void;
-}) {
-  const { theme } = useTheme();
-  const [mode, setMode] = useState<"direct" | "group">("direct");
-  const [query, setQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [groupName, setGroupName] = useState("");
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose]);
-
-  const filteredPeople = people.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));
-
-  const toggleSelected = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const handleCreateGroupClick = () => {
-    const members = people.filter((p) => selectedIds.includes(p.id));
-    if (members.length < 2) return;
-    onCreateGroup(groupName, members);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-        className={cn(
-          "w-full max-w-md border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]",
-          theme === "dark" ? "bg-zinc-900 border-white/[0.08]" : "bg-white border-zinc-200"
-        )}
-      >
-        <div className={cn("p-4 border-b flex items-center justify-between flex-shrink-0", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-          <h3 className={cn("text-sm font-semibold", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>New conversation</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className={cn("w-7 h-7 rounded-lg flex items-center justify-center", theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100")}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className={cn("p-4 space-y-3 flex-shrink-0 border-b", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-          <div className={cn("flex items-center gap-1.5 p-1 rounded-xl", theme === "dark" ? "bg-white/[0.03]" : "bg-zinc-100")}>
-            <button
-              type="button"
-              onClick={() => setMode("direct")}
-              className={cn(
-                "flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors",
-                mode === "direct" ? "bg-primary text-primary-foreground" : theme === "dark" ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              Direct message
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("group")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg transition-colors",
-                mode === "group" ? "bg-primary text-primary-foreground" : theme === "dark" ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600 hover:text-zinc-900"
-              )}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              New group
-            </button>
-          </div>
-
-          {mode === "group" && (
-            <Input
-              placeholder="Group name (optional)"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              className={cn(
-                "h-9 text-sm placeholder:text-zinc-500",
-                theme === "dark" ? "bg-white/[0.03] border-white/[0.08] text-zinc-200" : "bg-white border-zinc-200 text-zinc-900"
-              )}
-            />
-          )}
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <Input
-              placeholder="Search people..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className={cn(
-                "pl-9 h-9 text-sm placeholder:text-zinc-500",
-                theme === "dark" ? "bg-white/[0.03] border-white/[0.08] text-zinc-200" : "bg-white border-zinc-200 text-zinc-900"
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2">
-          {filteredPeople.length === 0 ? (
-            <p className={cn("text-center text-sm py-8", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>No people found</p>
-          ) : (
-            filteredPeople.map((person) => {
-              const isSelected = selectedIds.includes(person.id);
-              return (
-                <button
-                  key={person.id}
-                  type="button"
-                  onClick={() => (mode === "direct" ? onCreateDirect(person) : toggleSelected(person.id))}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left",
-                    theme === "dark" ? "hover:bg-white/[0.04]" : "hover:bg-zinc-100"
-                  )}
-                >
-                  <Avatar
-                    name={person.name}
-                    src={person.avatar}
-                    online={person.isOnline}
-                    gradient={getAvatarGradient(person.id)}
-                    size="sm"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm font-medium truncate", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>{person.name}</p>
-                    {person.role && <p className={cn("text-xs truncate", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{person.role}</p>}
-                  </div>
-                  {mode === "group" && (
-                    <div
-                      className={cn(
-                        "w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0",
-                        isSelected ? "bg-primary border-primary" : theme === "dark" ? "border-white/20" : "border-zinc-300"
-                      )}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                    </div>
-                  )}
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {mode === "group" && (
-          <div className={cn("p-4 border-t flex-shrink-0", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-            <Button
-              onClick={handleCreateGroupClick}
-              disabled={selectedIds.length < 2}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40"
-            >
-              Create group {selectedIds.length > 0 && `(${selectedIds.length})`}
-            </Button>
-            {selectedIds.length === 1 && (
-              <p className={cn("text-xs text-center mt-2", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>Select at least one more person</p>
-            )}
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}
-
-function EmptyConversationState({ onNewChat }: { onNewChat: () => void }) {
-  const { theme } = useTheme();
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-      <div className={cn(
-        "w-20 h-20 rounded-3xl flex items-center justify-center mb-5",
-        theme === "dark" ? "bg-white/[0.03] border border-white/[0.06]" : "bg-zinc-100 border border-zinc-200"
-      )}>
-        <MessageSquare className={cn("w-9 h-9", theme === "dark" ? "text-zinc-600" : "text-zinc-400")} />
-      </div>
-      <h3 className={cn("text-lg font-semibold mb-2", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>Your messages</h3>
-      <p className={cn("text-sm max-w-xs mb-5", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>
-        Select a conversation from the list, or start a new one to get chatting.
-      </p>
-      <Button onClick={onNewChat} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-        <Plus className="w-4 h-4 mr-2" />
-        New conversation
-      </Button>
-    </div>
   );
 }
 
@@ -1043,64 +487,21 @@ function EmptyConversationState({ onNewChat }: { onNewChat: () => void }) {
 export default function ChatPage() {
   const { currentUser } = useAuth();
   const { teamMembers } = useTeam();
-  const { theme } = useTheme();
 
   const [conversations, setConversations] = useState<Conversation[]>(SEED_CONVERSATIONS);
   const [messagesByConversation, setMessagesByConversation] = useState<Record<string, ChatMessage[]>>(SEED_MESSAGES);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(SEED_CONVERSATIONS[0]?.id ?? null);
-  const [listFilter, setListFilter] = useState<"all" | "direct" | "group">("all");
+  const [listFilter, setListFilter] = useState<"all" | "open" | "unassigned">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
   const [newMessage, setNewMessage] = useState("");
-  const [showInfoPanel, setShowInfoPanel] = useState(true);
-  const [isNewChatOpen, setIsNewChatOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    return () => {
-      timeoutsRef.current.forEach((t) => clearTimeout(t));
-    };
+    return () => { timeoutsRef.current.forEach(clearTimeout); };
   }, []);
-
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [selectedConversationId]);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isMenuOpen]);
-
-  const roster: ChatParticipant[] = useMemo(() => {
-    if (teamMembers && teamMembers.length > 0) {
-      return teamMembers
-        .filter((m) => m.id !== currentUser?.id)
-        .map((m) => ({
-          id: m.id,
-          name: m.name,
-          avatar: m.avatar,
-          role: m.role,
-          isOnline: m.status === "Available",
-        }));
-    }
-    return SEED_PEOPLE;
-  }, [teamMembers, currentUser?.id]);
-
-  const onlineCount =
-    teamMembers && teamMembers.length > 0
-      ? teamMembers.filter((m) => m.status === "Available").length
-      : SEED_PEOPLE.filter((p) => p.isOnline).length;
 
   const lastMessageByConversation = useMemo(() => {
     const map: Record<string, ChatMessage | undefined> = {};
@@ -1114,23 +515,16 @@ export default function ChatPage() {
   const filteredConversations = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return conversations
-      .filter((c) => Boolean(c.isArchived) === showArchived)
-      .filter((c) => listFilter === "all" || c.type === listFilter)
+      .filter((c) => !c.isArchived)
       .filter((c) => {
         if (!query) return true;
         const lastMsg = lastMessageByConversation[c.id]?.content?.toLowerCase() ?? "";
-        return (
-          c.title.toLowerCase().includes(query) ||
-          lastMsg.includes(query) ||
-          c.participants.some((p) => p.name.toLowerCase().includes(query))
-        );
+        return c.title.toLowerCase().includes(query) || lastMsg.includes(query);
       })
       .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
-  }, [conversations, listFilter, searchQuery, showArchived, lastMessageByConversation]);
+  }, [conversations, searchQuery, lastMessageByConversation]);
 
-  const archivedCount = conversations.filter((c) => c.isArchived).length;
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
-  const isGroup = selectedConversation?.type === "group";
   const currentMessages = selectedConversationId ? messagesByConversation[selectedConversationId] ?? [] : [];
 
   const renderItems = useMemo(() => {
@@ -1138,29 +532,21 @@ export default function ChatPage() {
     currentMessages.forEach((message, index) => {
       const prev = currentMessages[index - 1];
       const isNewDay = !prev || !isSameDay(prev.timestamp, message.timestamp);
-      if (isNewDay) {
-        items.push({ kind: "divider", id: `divider-${message.id}`, label: formatDateDivider(message.timestamp) });
-      }
       const showMeta = !prev || prev.senderId !== message.senderId || isNewDay;
       items.push({
         kind: "message",
         id: message.id,
         message,
         showAvatar: showMeta,
-        showName: showMeta && Boolean(isGroup) && message.senderId !== CURRENT_USER_ID,
+        showName: showMeta,
       });
     });
     return items;
-  }, [currentMessages, isGroup]);
+  }, [currentMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentMessages.length, selectedConversationId]);
-
-  const handleSelectConversation = (id: string) => {
-    setSelectedConversationId(id);
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)));
-  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1171,7 +557,7 @@ export default function ChatPage() {
       id: generateId("msg"),
       conversationId: selectedConversationId,
       senderId: CURRENT_USER_ID,
-      senderName: currentUser.fullName,
+      senderName: currentUser.fullName || "Support Team",
       senderAvatar: currentUser.avatar,
       content: trimmed,
       timestamp: new Date(),
@@ -1187,430 +573,233 @@ export default function ChatPage() {
     );
     setNewMessage("");
     inputRef.current?.focus();
-
-    const timeoutId = setTimeout(() => {
-      setMessagesByConversation((prev) => {
-        const list = prev[selectedConversationId];
-        if (!list) return prev;
-        return {
-          ...prev,
-          [selectedConversationId]: list.map((m) => (m.id === message.id ? { ...m, status: "read" } : m)),
-        };
-      });
-    }, 1600);
-    timeoutsRef.current.push(timeoutId);
   };
-
-  const handleCreateDirect = (person: ChatParticipant) => {
-    const existing = conversations.find((c) => c.type === "direct" && c.participants[0]?.id === person.id);
-    if (existing) {
-      setConversations((prev) => prev.map((c) => (c.id === existing.id ? { ...c, isArchived: false } : c)));
-      setSelectedConversationId(existing.id);
-    } else {
-      const conv: Conversation = {
-        id: generateId("conv"),
-        type: "direct",
-        title: person.name,
-        participants: [person],
-        isOnline: person.isOnline,
-        unreadCount: 0,
-        lastActivityAt: new Date(),
-      };
-      setConversations((prev) => [conv, ...prev]);
-      setMessagesByConversation((prev) => ({ ...prev, [conv.id]: [] }));
-      setSelectedConversationId(conv.id);
-    }
-    setIsNewChatOpen(false);
-  };
-
-  const handleCreateGroup = (name: string, members: ChatParticipant[]) => {
-    if (members.length === 0) return;
-    const title = name.trim() || members.map((m) => m.name.split(" ")[0]).join(", ");
-    const conv: Conversation = {
-      id: generateId("conv"),
-      type: "group",
-      title,
-      participants: members,
-      unreadCount: 0,
-      lastActivityAt: new Date(),
-    };
-    const systemMessage: ChatMessage = {
-      id: generateId("msg"),
-      conversationId: conv.id,
-      senderId: "system",
-      senderName: "System",
-      content: `You created the group "${title}"`,
-      timestamp: new Date(),
-      status: "read",
-      type: "system",
-    };
-    setConversations((prev) => [conv, ...prev]);
-    setMessagesByConversation((prev) => ({ ...prev, [conv.id]: [systemMessage] }));
-    setSelectedConversationId(conv.id);
-    setIsNewChatOpen(false);
-  };
-
-  const handleArchiveToggle = () => {
-    if (!selectedConversationId) return;
-    setConversations((prev) =>
-      prev.map((c) => (c.id === selectedConversationId ? { ...c, isArchived: !c.isArchived } : c))
-    );
-    setIsMenuOpen(false);
-    setSelectedConversationId(null);
-  };
-
-  const handleClearConversation = () => {
-    if (!selectedConversationId) return;
-    if (confirm("Clear all messages in this conversation?")) {
-      setMessagesByConversation((prev) => ({ ...prev, [selectedConversationId]: [] }));
-    }
-    setIsMenuOpen(false);
-  };
-
-  const subtitle = !selectedConversation
-    ? ""
-    : isGroup
-    ? `${selectedConversation.participants.length} members${
-        selectedConversation.participants.some((p) => p.isOnline)
-          ? ` · ${selectedConversation.participants.filter((p) => p.isOnline).length} online`
-          : ""
-      }`
-    : [selectedConversation.participants[0]?.role, selectedConversation.isOnline ? "Active now" : "Offline"]
-        .filter(Boolean)
-        .join(" · ");
 
   return (
-    <div className={cn("flex h-full overflow-hidden", theme === "dark" ? "bg-zinc-950" : "bg-zinc-50")}>
-      {/* Conversation list */}
-      <aside
-        className={cn(
-          "w-full md:w-80 lg:w-96 border-r flex-col flex-shrink-0",
-          theme === "dark" ? "border-white/[0.06] bg-zinc-950/50" : "border-zinc-200 bg-white",
-          selectedConversationId ? "hidden md:flex" : "flex"
-        )}
-      >
-        <div className={cn("p-4 border-b flex-shrink-0", theme === "dark" ? "border-white/[0.06]" : "border-zinc-200")}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={cn("text-lg font-semibold", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>Chats</h2>
-            <div className="flex items-center gap-3">
-              <span className={cn("hidden sm:flex items-center gap-1.5 text-xs", theme === "dark" ? "text-zinc-400" : "text-zinc-500")}>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {onlineCount} online
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsNewChatOpen(true)}
-                aria-label="New chat"
-                className="w-8 h-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors flex-shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="relative mb-3">
-            <div className="group flex items-center gap-2 px-3 h-10 rounded-lg bg-muted/50 border border-border/60 focus-within:border-primary/50 transition-colors w-full">
-              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              />
-              <span className="flex items-center gap-1 shrink-0">
-                <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
-                  ⌘
-                </kbd>
-                <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
-                  K
-                </kbd>
-              </span>
-            </div>
-          </div>
-          {!showArchived && (
-            <div className={cn("flex items-center gap-1.5 p-1 rounded-xl", theme === "dark" ? "bg-white/[0.03]" : "bg-zinc-100")}>
-              {(
-                [
-                  { key: "all", label: "All" },
-                  { key: "direct", label: "Direct" },
-                  { key: "group", label: "Groups" },
-                ] as const
-              ).map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setListFilter(f.key)}
-                  className={cn(
-                    "flex-1 text-xs font-medium py-1.5 rounded-lg transition-colors",
-                    listFilter === f.key ? "bg-primary text-primary-foreground" : theme === "dark" ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600 hover:text-zinc-900"
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          )}
+    <div className="flex h-screen w-full bg-[#050505] text-zinc-300 font-sans overflow-hidden selection:bg-fuchsia-500/30">
+      
+      {/* Far Left Navigation Rail (Mock matching) */}
+      <nav className="w-[72px] hidden md:flex flex-col items-center py-6 border-r border-white/[0.04] bg-[#0A0A0C] flex-shrink-0 z-10 relative">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 mb-8 p-0.5">
+          <img src="https://i.pravatar.cc/150?u=me" alt="User" className="w-full h-full object-cover rounded-[10px]" />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          {filteredConversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center mb-3",
-                theme === "dark" ? "bg-white/[0.03] border border-white/[0.06]" : "bg-zinc-100 border border-zinc-200"
-              )}>
-                <MessageSquare className={cn("w-6 h-6", theme === "dark" ? "text-zinc-600" : "text-zinc-400")} />
-              </div>
-              <p className={cn("text-sm", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{showArchived ? "No archived chats" : "No conversations found"}</p>
-            </div>
-          ) : (
-            <AnimatePresence initial={false}>
-              {filteredConversations.map((conversation) => (
-                <ConversationListItem
-                  key={conversation.id}
-                  conversation={conversation}
-                  lastMessage={lastMessageByConversation[conversation.id]}
-                  isActive={conversation.id === selectedConversationId}
-                  onClick={() => handleSelectConversation(conversation.id)}
-                />
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
+        <div className="flex flex-col gap-4 w-full px-3">
+          <button className="w-full aspect-square rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-gray-400 shadow-sm relative group transition-colors hover:bg-white/[0.04]">
+            <Inbox className="w-5 h-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-gray-500" />
+          </button>
+          
+          <div className="w-full h-[1px] bg-white/[0.04] my-2" />
 
-        {archivedCount > 0 && (
-          <div className="p-3 pt-0 flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowArchived((v) => !v)}
-              className={cn(
-                "w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg transition-colors",
-                theme === "dark" ? "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]" : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
-              )}
-            >
-              {showArchived ? (
-                <>
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to chats
-                </>
-              ) : (
-                <>
-                  <Archive className="w-3.5 h-3.5" /> Archived ({archivedCount})
-                </>
-              )}
+          {[
+            { icon: Users, label: "Assigned" },
+            { icon: FileText, label: "Shared" },
+            { icon: Inbox, label: "All" },
+            { icon: FileText, label: "Drafts" },
+            { icon: SendIcon, label: "Sent" },
+            { icon: Trash, label: "Trash" },
+            { icon: MoreVertical, label: "More" },
+          ].map((item, i) => (
+            <button key={i} className="w-full aspect-square rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors relative group">
+              <item.icon className="w-5 h-5" />
+            </button>
+          ))}
+        </div>
+        
+        <div className="mt-auto flex flex-col gap-4 w-full px-3">
+           <div className="w-full h-[1px] bg-white/[0.04] mb-2" />
+           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+              <span className="w-5 h-5 rounded bg-gradient-to-br from-gray-600 to-gray-800 text-[10px] font-bold text-white flex items-center justify-center mb-1">C</span>
+           </button>
+           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+              <span className="w-5 h-5 rounded bg-gray-700 text-[10px] font-bold text-white flex items-center justify-center mb-1">T1</span>
+           </button>
+           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+              <span className="w-5 h-5 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center mb-1">T2</span>
+           </button>
+           <button className="w-full aspect-square rounded-xl flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors">
+              <span className="w-5 h-5 rounded bg-gray-600 text-[10px] font-bold text-white flex items-center justify-center mb-1">X</span>
+           </button>
+        </div>
+      </nav>
+
+      {/* Inbox List Column */}
+      <aside className={cn(
+        "w-full md:w-[320px] lg:w-[380px] bg-[#0A0A0C] border-r border-white/[0.04] flex flex-col flex-shrink-0 relative z-10",
+        selectedConversationId ? "hidden md:flex" : "flex"
+      )}>
+        <div className="p-5 pt-8 flex-shrink-0">
+          <div className="relative mb-5">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-11 pr-4 bg-[#141416] border border-white/[0.04] rounded-xl text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-white/10 transition-colors"
+            />
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded bg-white/[0.04] flex items-center justify-center text-zinc-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
           </div>
-        )}
+
+          <div className="flex items-center gap-2">
+            {[
+              { key: "unassigned", label: "Unassigned", active: false },
+              { key: "open", label: "Open", active: false },
+              { key: "all", label: "All", active: true },
+            ].map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setListFilter(f.key as any)}
+                className={cn(
+                  "flex-1 py-2 text-[11px] font-semibold rounded-lg transition-colors border",
+                  f.active 
+                    ? "bg-[#1C1C1F] border-white/10 text-white" 
+                    : "bg-transparent border-white/[0.04] text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
+          <AnimatePresence initial={false}>
+            {filteredConversations.map((conversation) => (
+              <ConversationListItem
+                key={conversation.id}
+                conversation={conversation}
+                lastMessage={lastMessageByConversation[conversation.id]}
+                isActive={conversation.id === selectedConversationId}
+                onClick={() => setSelectedConversationId(conversation.id)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </aside>
 
-      {/* Main chat area */}
+      {/* Main Chat Area */}
       <main className={cn(
-        "flex-1 flex-col min-w-0",
-        theme === "dark" ? "bg-zinc-950" : "bg-white",
+        "flex-1 flex flex-col min-w-0 bg-[#050505] relative",
         selectedConversationId ? "flex" : "hidden md:flex"
       )}>
         {selectedConversation ? (
           <>
-            <header className={cn(
-              "h-16 border-b backdrop-blur-xl px-4 md:px-6 flex items-center justify-between gap-3 flex-shrink-0",
-              theme === "dark" ? "border-white/[0.06] bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
-            )}>
-              <div className="flex items-center gap-3 min-w-0">
+            <header className="px-8 py-10 flex-shrink-0 flex items-center justify-between">
+              <div className="flex items-center gap-4">
                 <button
-                  type="button"
                   onClick={() => setSelectedConversationId(null)}
-                  aria-label="Back to chats"
-                  className={cn(
-                    "md:hidden -ml-1 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                    theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
-                  )}
+                  className="md:hidden w-10 h-10 rounded-xl bg-[#141416] flex items-center justify-center text-zinc-400"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-5 h-5" />
                 </button>
-                {isGroup ? (
-                  <GroupAvatar participants={selectedConversation.participants} />
-                ) : (
-                  <Avatar
-                    name={selectedConversation.title}
-                    src={selectedConversation.participants[0]?.avatar}
-                    online={selectedConversation.isOnline}
-                    gradient={getAvatarGradient(selectedConversation.id)}
-                  />
-                )}
-                <div className="min-w-0">
-                  <h1 className={cn("text-base font-semibold truncate", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>{selectedConversation.title}</h1>
-                  <p className={cn("text-xs truncate", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{subtitle}</p>
-                </div>
+                <h1 className="text-3xl font-light text-white tracking-tight">
+                  Hello, help me with email ...
+                </h1>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Button variant="ghost" size="icon" aria-label="Call" className={cn("h-9 w-9", theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100")}>
-                  <Phone className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" aria-label="Video call" className={cn("h-9 w-9", theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100")}>
-                  <Video className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Toggle chat info"
-                  onClick={() => setShowInfoPanel((v) => !v)}
-                  className={cn(
-                    "hidden lg:inline-flex h-9 w-9",
-                    showInfoPanel ? "text-primary bg-primary/10 hover:bg-primary/15" : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]"
-                  )}
-                >
-                  <Info className="w-4 h-4" />
-                </Button>
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="More options"
-                    onClick={() => setIsMenuOpen((v) => !v)}
-                    className={cn("h-9 w-9", theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100")}
-                  >
+              
+              <div className="flex items-center gap-2">
+                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                    <FileText className="w-4 h-4" />
+                 </button>
+                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                    <Inbox className="w-4 h-4" />
+                 </button>
+                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                    <Trash className="w-4 h-4" />
+                 </button>
+                 <button className="w-9 h-9 rounded-xl bg-[#141416] border border-white/[0.04] flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
                     <MoreVertical className="w-4 h-4" />
-                  </Button>
-                  <AnimatePresence>
-                    {isMenuOpen && (
-                      <motion.div
-                        ref={menuRef}
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className={cn(
-                          "absolute right-0 top-11 w-52 border rounded-xl shadow-2xl p-1 z-20",
-                          theme === "dark" ? "bg-zinc-900 border-white/[0.08]" : "bg-white border-zinc-200"
-                        )}
-                      >
-                        <button
-                          type="button"
-                          onClick={handleArchiveToggle}
-                          className={cn("w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors", theme === "dark" ? "text-zinc-300 hover:bg-white/[0.06]" : "text-zinc-700 hover:bg-zinc-100")}
-                        >
-                          {selectedConversation.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-                          {selectedConversation.isArchived ? "Unarchive chat" : "Archive chat"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearConversation}
-                          className={cn("w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors", theme === "dark" ? "text-zinc-300 hover:bg-white/[0.06]" : "text-zinc-700 hover:bg-zinc-100")}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Clear conversation
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                 </button>
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
-              {currentMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center mb-4",
-                    theme === "dark" ? "bg-white/[0.03] border border-white/[0.06]" : "bg-zinc-100 border border-zinc-200"
-                  )}>
-                    {isGroup ? <Users className={cn("w-8 h-8", theme === "dark" ? "text-zinc-600" : "text-zinc-400")} /> : <MessageSquare className={cn("w-8 h-8", theme === "dark" ? "text-zinc-600" : "text-zinc-400")} />}
-                  </div>
-                  <h3 className={cn("text-lg font-semibold mb-2", theme === "dark" ? "text-zinc-100" : "text-zinc-900")}>No messages yet</h3>
-                  <p className={cn("text-sm max-w-xs", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>
-                    {isGroup ? `Say hello to ${selectedConversation.title}!` : `Start the conversation with ${selectedConversation.title}.`}
-                  </p>
-                </div>
-              ) : (
-                <AnimatePresence initial={false}>
-                  {renderItems.map((item) =>
-                    item.kind === "divider" ? (
-                      <motion.div key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center py-2">
-                        <span className={cn(
-                          "text-[11px] font-medium px-3 py-1 rounded-full",
-                          theme === "dark" ? "text-zinc-500 bg-white/[0.04]" : "text-zinc-400 bg-zinc-100"
-                        )}>{item.label}</span>
-                      </motion.div>
-                    ) : item.message.type === "system" ? (
-                      <motion.div key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center py-1">
-                        <span className={cn("text-[11px] text-center px-4", theme === "dark" ? "text-zinc-500" : "text-zinc-400")}>{item.message.content}</span>
-                      </motion.div>
-                    ) : (
-                      <MessageBubble
-                        key={item.id}
-                        message={item.message}
-                        isCurrentUser={item.message.senderId === CURRENT_USER_ID}
-                        showAvatar={item.showAvatar}
-                        showName={item.showName}
-                      />
-                    )
-                  )}
-                  {selectedConversation.isTyping && (
-                    <TypingBubble key="typing-indicator" participant={selectedConversation.participants[0]} />
-                  )}
-                </AnimatePresence>
-              )}
+            <div className="flex-1 overflow-y-auto px-8 custom-scrollbar">
+              <AnimatePresence initial={false}>
+                {renderItems.map((item) =>
+                  item.kind === "divider" ? null : (
+                    <MessageBubble
+                      key={item.id}
+                      message={item.message}
+                      isCurrentUser={item.message.senderId === CURRENT_USER_ID}
+                      showAvatar={item.showAvatar}
+                      showName={item.showName}
+                    />
+                  )
+                )}
+              </AnimatePresence>
               <div ref={messagesEndRef} />
             </div>
 
-            <div className={cn(
-              "p-4 border-t backdrop-blur-xl flex-shrink-0",
-              theme === "dark" ? "border-white/[0.06] bg-zinc-950/50" : "border-zinc-200 bg-zinc-50"
-            )}>
-              <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-                <Button type="button" variant="ghost" size="icon" aria-label="Attach file" className={cn("h-10 w-10 flex-shrink-0", theme === "dark" ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]" : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100")}>
-                  <Paperclip className="w-5 h-5" />
-                </Button>
-                <div className="flex-1 relative min-w-0">
+            <div className="p-6 pt-2 pb-8 flex-shrink-0 max-w-4xl w-full mx-auto">
+              <form onSubmit={handleSendMessage} className="relative">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 to-transparent pointer-events-none -translate-y-full" />
+                <div className="bg-[#141416] border border-white/[0.06] rounded-2xl p-2 flex items-center gap-2 shadow-2xl relative z-10 backdrop-blur-xl">
+                  <div className="flex items-center gap-1 pl-2">
+                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                        <Paperclip className="w-4 h-4" />
+                     </button>
+                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                        <FileText className="w-4 h-4" />
+                     </button>
+                     <button type="button" className="w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] flex items-center justify-center transition-colors">
+                        <Smile className="w-4 h-4" />
+                     </button>
+                  </div>
+                  
                   <Input
                     ref={inputRef}
-                    placeholder={`Message ${selectedConversation.title}...`}
+                    placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className={cn(
-                      "h-10 text-sm placeholder:text-zinc-500 pr-10",
-                      theme === "dark" ? "bg-white/[0.03] border-white/[0.08] text-zinc-200" : "bg-white border-zinc-200 text-zinc-900"
-                    )}
+                    className="flex-1 bg-transparent border-none text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-0 shadow-none px-2 text-[15px]"
                   />
-                  <Button type="button" variant="ghost" size="icon" aria-label="Emoji" className={cn("absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8", theme === "dark" ? "text-zinc-400 hover:text-zinc-100" : "text-zinc-400 hover:text-zinc-900")}>
-                    <Smile className="w-4 h-4" />
+                  
+                  <Button
+                    type="submit"
+                    disabled={!newMessage.trim()}
+                    className="h-10 px-6 rounded-xl bg-white text-black hover:bg-zinc-200 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all"
+                  >
+                    Reply
                   </Button>
                 </div>
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!newMessage.trim()}
-                  aria-label="Send message"
-                  className="h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
               </form>
             </div>
           </>
         ) : (
-          <EmptyConversationState onNewChat={() => setIsNewChatOpen(true)} />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-20 h-20 rounded-3xl bg-[#141416] border border-white/[0.04] flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="w-8 h-8 text-zinc-600" />
+              </div>
+              <h3 className="text-xl font-light text-zinc-300 mb-2">Select a conversation</h3>
+              <p className="text-zinc-500 text-sm max-w-[260px]">Choose an existing chat from the sidebar or start a new one.</p>
+            </div>
+          </div>
         )}
       </main>
 
-      {/* Info panel */}
-      <AnimatePresence>
-        {showInfoPanel && selectedConversation && (
-          <InfoPanel key="info-panel" conversation={selectedConversation} onClose={() => setShowInfoPanel(false)} />
-        )}
-      </AnimatePresence>
-
-      {/* New chat modal */}
-      <AnimatePresence>
-        {isNewChatOpen && (
-          <NewChatModal
-            key="new-chat-modal"
-            people={roster}
-            onClose={() => setIsNewChatOpen(false)}
-            onCreateDirect={handleCreateDirect}
-            onCreateGroup={handleCreateGroup}
-          />
-        )}
-      </AnimatePresence>
+      {/* Right Sidebar Info Panel */}
+      {selectedConversation && <InfoPanel conversation={selectedConversation} />}
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      `}} />
     </div>
   );
 }

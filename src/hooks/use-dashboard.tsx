@@ -12,7 +12,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isNotificationOpen, setNotificationOpen] = useState(false);
-  const [isSidebarExpanded, setSidebarExpanded] = useState(false);
+  const [isSidebarExpanded, setSidebarExpanded] = useState(true);
 
   const toggleNotification = useCallback(() => setNotificationOpen((prev) => !prev), []);
   const toggleSidebar = useCallback(() => setSidebarExpanded((prev) => !prev), []);

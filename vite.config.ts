@@ -7,18 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // Conditional Replit plugins
-    ...(process.env.REPL_ID !== undefined
-      ? [
-          import("@replit/vite-plugin-runtime-error-modal").then((m) => m.default()),
-          import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname),
-            }),
-          ),
-          import("@replit/vite-plugin-dev-banner").then((m) => m.devBanner()),
-        ]
-      : []),
+    // Note: Replit plugins are intentionally omitted for standard Vite builds.
+    // They require an async plugin factory which is incompatible with the
+    // synchronous vite.config.ts export.  When running inside Replit the
+    // platform injects these plugins automatically via the Replit config.
   ],
   resolve: {
     alias: {
@@ -51,5 +43,12 @@ export default defineConfig({
     port: Number(process.env.PORT) || 5173,
     host: process.env.NODE_ENV === "production" ? "localhost" : "0.0.0.0",
     strictPort: true,
+    headers: {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    },
   },
 });

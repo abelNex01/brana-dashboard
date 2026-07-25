@@ -7,14 +7,13 @@ interface GearContextType {
   addGearItem: (item: Omit<GearItem, "id" | "lastMaintenance">) => void;
   updateGearItem: (id: string, updates: Partial<GearItem>) => void;
   removeGearItem: (id: string) => void;
-  resetGearItems: () => void;
   getGearItemById: (id: string) => GearItem | undefined;
 }
 
 const GearContext = createContext<GearContextType | undefined>(undefined);
 
 export function GearProvider({ children }: { children: React.ReactNode }) {
-  const { items: gearItems, create, update, remove, reset, getById } = useCrudStore<GearItem>("gearItems", defaultGearItems);
+  const { items: gearItems, create, update, remove, getById } = useCrudStore<GearItem>("gearItems", defaultGearItems);
 
   const addGearItem = (item: Omit<GearItem, "id" | "lastMaintenance">) => {
     create({
@@ -33,9 +32,8 @@ export function GearProvider({ children }: { children: React.ReactNode }) {
     addGearItem,
     updateGearItem: update,
     removeGearItem: remove,
-    resetGearItems: reset,
     getGearItemById: getById,
-  }), [gearItems, update, remove, reset, getById]);
+  }), [gearItems, update, remove, getById]);
 
   return (
     <GearContext.Provider value={value}>

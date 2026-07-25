@@ -1,69 +1,144 @@
-/**
- * financeService.ts
- * ─────────────────────────────────────────────────────────────
- * Repository-pattern service layer for financial data.
- *
- * Currently backed by localStorage. Designed so swapping to
- * Supabase / Firebase / Prisma requires changing only this file.
- * ─────────────────────────────────────────────────────────────
- */
-
 import type { FinanceState } from "@/types/finance";
-import { createInitialFinanceState } from "@/utils/financeSeed";
+import { createInitialFinanceState, defaultFilters } from "@/utils/financeSeed";
+import { supabase } from "@/lib/supabase";
+import { logger } from "@/utils/logger";
+import type { JsonObject } from "@/types/common";
 
-const STORAGE_KEY = "brana_finance_state";
 const SYNC_EVENT = "brana-finance-sync";
+const FINANCE_ROW_ID = "single_instance";
+
+export function createEmptyFinanceState(): FinanceState {
+  return {
+    income: [],
+    expenses: [],
+    payroll: [],
+    subscriptions: [],
+    notifications: [],
+    auditLog: [],
+    filters: defaultFilters,
+    deletedItems: [],
+  };
+}
+
+function mergeFinanceState(parsed: Partial<FinanceState>): FinanceState {
+  const defaults = createInitialFinanceState();
+  return {
+    income: parsed.income ?? [],
+    expenses: parsed.expenses ?? [],
+    payroll: parsed.payroll ?? [],
+    subscriptions: parsed.subscriptions ?? [],
+    notifications: parsed.notifications ?? defaults.notifications,
+    auditLog: parsed.auditLog ?? defaults.auditLog,
+    filters: parsed.filters ?? defaults.filters,
+    deletedItems: parsed.deletedItems ?? defaults.deletedItems,
+  };
+}
 
 // ─── Persistence ─────────────────────────────────────────────
 
-export function loadFinanceState(): FinanceState {
+export async function loadFinanceState(): Promise<FinanceState> {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as Partial<FinanceState>;
-      // Merge with defaults to handle schema migrations
-      const defaults = createInitialFinanceState();
-      return {
-        ...defaults,
-        ...parsed,
-        // Ensure new arrays exist even if stored data was from an older schema
-        income: parsed.income ?? defaults.income,
-        expenses: parsed.expenses ?? defaults.expenses,
-        editorPayments: parsed.editorPayments ?? defaults.editorPayments,
-        payroll: parsed.payroll ?? defaults.payroll,
-        invoices: parsed.invoices ?? defaults.invoices,
-        budgets: parsed.budgets ?? defaults.budgets,
-        gearMaintenance: parsed.gearMaintenance ?? defaults.gearMaintenance,
-        subscriptions: parsed.subscriptions ?? defaults.subscriptions,
-        taxRecords: parsed.taxRecords ?? defaults.taxRecords,
-        savingsGoals: parsed.savingsGoals ?? defaults.savingsGoals,
-        financialGoals: parsed.financialGoals ?? defaults.financialGoals,
-        accountsPayable: parsed.accountsPayable ?? defaults.accountsPayable,
-        notifications: parsed.notifications ?? defaults.notifications,
-        auditLog: parsed.auditLog ?? defaults.auditLog,
-        filters: parsed.filters ?? defaults.filters,
-        deletedItems: parsed.deletedItems ?? defaults.deletedItems,
-      };
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      logger.warn("[FinanceService] No active session, using empty finance state");
+      return createEmptyFinanceState();
     }
+
+    const { data, error } = await supabase
+      .from("finance_state")
+      .select("state_blob")
+      .eq("id", FINANCE_ROW_ID)
+      .maybeSingle();
+
+    if (error) {
+      logger.error("[FinanceService] Error fetching finance state", error);
+      return createEmptyFinanceState();
+    }
+
+    if (data?.state_blob) {
+      const parsed = data.state_blob as Partial<FinanceState>;
+      return mergeFinanceState(parsed);
+    }
+
+    // No row yet — seed demo data once and persist it.
+    const initial = createInitialFinanceState();
+    await persistFinanceState(initial);
+    return initial;
   } catch (e) {
-    console.warn("Failed to load finance state:", e);
-    /* corrupted data — fall through to defaults */
+    logger.warn("Failed to load finance state from Supabase, falling back to empty data", e);
+    return createEmptyFinanceState();
   }
-  return createInitialFinanceState();
 }
 
-export function saveFinanceState(state: FinanceState): void {
+let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+let _pendingState: FinanceState | null = null;
+
+async function persistFinanceState(state: FinanceState): Promise<boolean> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    // Cross-tab / cross-component sync
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      logger.warn("[FinanceService] No active session, skipping save");
+      return false;
+    }
+
+    const { error } = await supabase.from("finance_state").upsert(
+      {
+        id: FINANCE_ROW_ID,
+        state_blob: state as unknown as JsonObject,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+    if (error) {
+      logger.error("[FinanceService] Error saving to Supabase", error);
+      return false;
+    }
+
+    logger.debug("[FinanceService] Finance state saved to Supabase");
     window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: state }));
-  } catch {
-    console.warn("[FinanceService] Failed to save state to localStorage");
+    return true;
+  } catch (e) {
+    logger.warn("[FinanceService] Failed to save state to Supabase", e);
+    return false;
   }
+}
+
+export async function flushFinanceStateSave(): Promise<void> {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+  }
+
+  if (!_pendingState) return;
+
+  const stateToSave = _pendingState;
+  _pendingState = null;
+  await persistFinanceState(stateToSave);
+}
+
+export async function saveFinanceState(state: FinanceState): Promise<void> {
+  _pendingState = state;
+
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+  }
+
+  return new Promise((resolve) => {
+    _saveTimer = setTimeout(async () => {
+      _saveTimer = null;
+      if (_pendingState) {
+        const stateToSave = _pendingState;
+        _pendingState = null;
+        await persistFinanceState(stateToSave);
+      }
+      resolve();
+    }, 400);
+  });
 }
 
 export function clearFinanceState(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  // Can delete from Supabase if needed, but not recommended for client-side
 }
 
 // ─── Sync Listener (for cross-tab) ──────────────────────────
@@ -76,7 +151,21 @@ export function subscribeToSync(callback: (state: FinanceState) => void): () => 
     }
   };
   window.addEventListener(SYNC_EVENT, handler);
-  return () => window.removeEventListener(SYNC_EVENT, handler);
+  
+  // Realtime subscription via Supabase
+  const channel = supabase.channel('finance_state_sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_state' }, payload => {
+       const newPayload = payload.new as JsonObject;
+       if (newPayload && newPayload.state_blob) {
+         callback(newPayload.state_blob as FinanceState);
+       }
+    })
+    .subscribe();
+    
+  return () => {
+    window.removeEventListener(SYNC_EVENT, handler);
+    supabase.removeChannel(channel);
+  };
 }
 
 // ─── Export Utilities ────────────────────────────────────────
@@ -95,7 +184,6 @@ export function exportToCSV<T extends Record<string, unknown>>(
       .map((h) => {
         const val = item[h];
         const str = val === null || val === undefined ? "" : String(val);
-        // Escape commas and quotes
         return str.includes(",") || str.includes('"')
           ? `"${str.replace(/"/g, '""')}"`
           : str;
@@ -116,21 +204,3 @@ export function downloadFile(content: string, filename: string, mimeType: string
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
-// ─── Future API Integration Points ──────────────────────────
-//
-// When migrating to Supabase/Firebase/Prisma, replace the
-// loadFinanceState() and saveFinanceState() functions with
-// async API calls. The rest of the application code (contexts,
-// hooks, components) will remain unchanged.
-//
-// Example:
-//
-// export async function loadFinanceState(): Promise<FinanceState> {
-//   const { data } = await supabase.from('finance_state').select('*').single();
-//   return data as FinanceState;
-// }
-//
-// export async function saveFinanceState(state: FinanceState): Promise<void> {
-//   await supabase.from('finance_state').upsert(state);
-// }

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { ServiceLogos } from "@/components/ServiceLogos";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -35,7 +36,7 @@ const mainItems: SidebarItem[] = [
   { icon: Calendar, label: "Schedule", id: "schedule", href: "/dashboard/schedule" },
   { icon: Cog, label: "Gear", id: "analytics", href: "/dashboard/gears" },
   { icon: Wallet, label: "Wallet", id: "wallet", href: "/dashboard/wallet" },
-  { icon: Users, label: "Team", id: "community", href: "/dashboard/team", badge: 12 },
+  { icon: Users, label: "Team", id: "community", href: "/dashboard/team" },
   { icon: MessageSquare, label: "Chat", id: "messages", href: "/dashboard/messages" },
 ];
 
@@ -55,7 +56,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative flex h-dvh shrink-0 flex-col overflow-hidden border-r border-white/[0.055] bg-[#191919] text-[#a1a1a1] shadow-[12px_0_35px_rgba(0,0,0,0.12)] transition-[width] duration-300 ease-out ${
+      className={`relative flex h-full shrink-0 flex-col overflow-hidden border-r border-white/[0.055] bg-[#191919] text-[#a1a1a1] shadow-[12px_0_35px_rgba(0,0,0,0.12)] transition-[width] duration-300 ease-out ${
         isSidebarExpanded ? "w-[254px]" : "w-[68px]"
       }`}
     >
@@ -129,8 +130,11 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <footer className={`mt-auto border-t border-white/[0.045] pt-4 pb-6 shrink-0 flex justify-center ${isSidebarExpanded ? "mx-4 justify-start" : "mx-2"}`}>
-        <ThemeSwitch theme={theme} setTheme={setTheme} isExpanded={isSidebarExpanded} />
+      <footer className={`mt-auto border-t border-white/[0.045] pt-4 pb-6 shrink-0 flex flex-col gap-4 ${isSidebarExpanded ? "mx-4" : "mx-2"}`}>
+        <ServiceLogos isExpanded={isSidebarExpanded} />
+        <div className={`flex ${isSidebarExpanded ? "justify-start" : "justify-center"}`}>
+          <ThemeSwitch theme={theme} setTheme={setTheme} isExpanded={isSidebarExpanded} />
+        </div>
       </footer>
     </aside>
   );

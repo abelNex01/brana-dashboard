@@ -44,6 +44,7 @@ import {
   StyledSelect,
   ActionButton,
 } from "@/components/CrudModal";
+import CloudinaryImage from "@/components/ui/CloudinaryImage";
 
 /* ════════════════════════════════════════════════════════════════════════
    WORKSPACE DATA LAYER
@@ -74,7 +75,6 @@ interface TeamMemberLike {
   accentColor?: string;
   statusColor?: string;
   completedProjects?: number;
-  [key: string]: any;
 }
 
 type TaskStatus = "todo" | "in-progress" | "review" | "done";
@@ -174,10 +174,10 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  low: "#22c55e",
-  medium: "#3b82f6",
-  high: "#f97316",
-  urgent: "#ef4444",
+  low: "#999999",
+  medium: "#666666",
+  high: "#444444",
+  urgent: "#000000",
 };
 
 const DEPARTMENT_POOL = ["Production", "Post-Production", "Camera", "Audio", "Operations", "Management"];
@@ -869,7 +869,7 @@ function MemberWorkspaceModal({
           <div className="flex items-center gap-4 min-w-0">
             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted flex-shrink-0">
               {member.image ? (
-                <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
+                <CloudinaryImage src={member.image} alt={member.name} className="w-full h-full object-cover" />
               ) : (
                 <div
                   className="w-full h-full flex items-center justify-center font-black text-lg"
@@ -1103,7 +1103,7 @@ function MemberWorkspaceModal({
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, workload.percent)}%`,
-                      background: workload.percent > 100 ? "#ef4444" : workload.percent > 80 ? "#f59e0b" : "#22c55e",
+                      background: workload.percent > 100 ? "#000000" : workload.percent > 80 ? "#444444" : "#999999",
                     }}
                   />
                 </div>
@@ -1233,7 +1233,7 @@ function MemberWorkspaceModal({
                   onClick={() => (extras.isClockedIn ? workspace.clockOut(member.id) : workspace.clockIn(member.id))}
                   className="px-5 py-3 rounded-full font-bold text-sm flex items-center gap-2 flex-shrink-0 transition-colors"
                   style={{
-                    background: extras.isClockedIn ? "#ef4444" : "var(--color-foreground)",
+                    background: extras.isClockedIn ? "#000000" : "var(--color-foreground)",
                     color: extras.isClockedIn ? "#fff" : "var(--color-background)",
                   }}
                 >
@@ -1279,7 +1279,7 @@ function MemberWorkspaceModal({
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, workload.percent)}%`,
-                      background: workload.percent > 100 ? "#ef4444" : workload.percent > 80 ? "#f59e0b" : "#22c55e",
+                      background: workload.percent > 100 ? "#000000" : workload.percent > 80 ? "#444444" : "#999999",
                     }}
                   />
                 </div>
@@ -1310,8 +1310,8 @@ function MemberWorkspaceModal({
                       <Star
                         className="w-6 h-6 transition-colors"
                         style={{
-                          fill: n <= extras.profile.rating ? "#f59e0b" : "none",
-                          color: n <= extras.profile.rating ? "#f59e0b" : "var(--color-muted-foreground)",
+                          fill: n <= extras.profile.rating ? "#666666" : "none",
+                          color: n <= extras.profile.rating ? "#666666" : "var(--color-muted-foreground)",
                         }}
                       />
                     </button>
@@ -1520,7 +1520,7 @@ function RadialGauge({ value }: { value: number }) {
   const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(100, value));
   const offset = c - (clamped / 100) * c;
-  const color = clamped >= 80 ? "#22c55e" : clamped >= 50 ? "#f59e0b" : "#ef4444";
+  const color = clamped >= 80 ? "#999999" : clamped >= 50 ? "#666666" : "#000000";
   return (
     <svg width="88" height="88" viewBox="0 0 88 88" className="flex-shrink-0">
       <circle cx="44" cy="44" r={r} fill="none" stroke="var(--color-muted)" strokeWidth="8" />
@@ -1846,12 +1846,12 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 const statusColors: Record<string, string> = {
-  "In Field": "#f97316",
-  Editing: "#a78bfa",
-  Available: "#22c55e",
-  "Post-Production": "#fb923c",
-  Online: "#22c55e",
-  "Off Duty": "#94a3b8",
+  "In Field": "#444444",
+  Editing: "#666666",
+  Available: "#999999",
+  "Post-Production": "#555555",
+  Online: "#999999",
+  "Off Duty": "#777777",
 };
 
 const cardGradients = [
@@ -2007,15 +2007,15 @@ export default function TeamPage() {
 
   const handleSave = () => {
     const roleColorsMap: Record<string, string> = {
-      "Lead Cinematographer": "#7c3aed",
-      "Senior Editor": "#a78bfa",
-      "Drone Operator": "#60a5fa",
-      "Editor & Colorist": "#fb923c",
-      "Studio Director": "#22c55e",
+      "Lead Cinematographer": "#333333",
+      "Senior Editor": "#444444",
+      "Drone Operator": "#555555",
+      "Editor & Colorist": "#666666",
+      "Studio Director": "#222222",
     };
 
-    const roleAccent = roleColorsMap[formData.role] || "#f97316";
-    const statusAccent = statusColors[formData.status] || "#f97316";
+    const roleAccent = roleColorsMap[formData.role] || "#444444";
+    const statusAccent = statusColors[formData.status] || "#444444";
 
     if (editingItem) {
       update(editingItem.id, {
@@ -2204,7 +2204,7 @@ export default function TeamPage() {
           >
             {/* Top Gradient Background or Image */}
             {member.image ? (
-              <img
+              <CloudinaryImage
                 src={member.image}
                 alt={member.name}
                 className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100"
@@ -2333,7 +2333,7 @@ export default function TeamPage() {
             <div className="flex flex-col gap-2">
               <div className="w-full h-32 rounded-xl border border-border/40 overflow-hidden bg-muted/30">
                 {formData.image ? (
-                  <img
+                  <CloudinaryImage
                     src={formData.image}
                     alt="Preview"
                     className="w-full h-full object-cover"
