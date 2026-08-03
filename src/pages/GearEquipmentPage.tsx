@@ -562,27 +562,16 @@ export default function GearEquipmentPage() {
         </div>
 
         {/* Right side: status filter chips + list toggle */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5 border border-border dark:bg-zinc-900 dark:border-zinc-800 flex-shrink-0">
           {ALL_STATUSES.filter((s) => s !== "All").map((s) => (
             <button
               key={s}
               onClick={() => setActiveStatus(activeStatus === s ? "All" : s)}
-              className="text-[10px] font-bold px-2.5 py-1 rounded-full capitalize transition-all"
-              style={{
-                background:
-                  activeStatus === s
-                    ? "var(--color-primary)"
-                    : "var(--color-muted)",
-                color:
-                  activeStatus === s
-                    ? "var(--color-primary-foreground)"
-                    : "var(--color-muted-foreground)",
-                border:
-                  "1px solid " +
-                  (activeStatus === s
-                    ? "var(--color-primary)"
-                    : "var(--color-border)"),
-              }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors capitalize ${
+                activeStatus === s
+                  ? "bg-foreground text-background dark:bg-zinc-800/60 dark:text-zinc-100"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground dark:text-zinc-400 dark:hover:bg-zinc-800/30 dark:hover:text-zinc-200"
+              }`}
             >
               {s.replace("-", " ")}
             </button>

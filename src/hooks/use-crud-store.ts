@@ -64,6 +64,18 @@ const TABLE_SCHEMA_COLUMNS: Record<string, string[]> = {
   ],
   chat_messages: ["id", "sender_id", "content", "created_at"],
   finance_state: ["id", "state_blob", "created_at", "updated_at"],
+  schedule_events: [
+    "id",
+    "title",
+    "date",
+    "start_time",
+    "end_time",
+    "category",
+    "location",
+    "description",
+    "color",
+    "created_at",
+  ],
 };
 
 function sanitizeDbPayload(

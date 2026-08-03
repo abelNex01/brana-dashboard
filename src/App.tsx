@@ -1,5 +1,5 @@
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
-import { lazy, Suspense, useState } from "react";
+import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
@@ -17,6 +17,7 @@ import { FinanceProvider } from "@/contexts/FinanceContext";
 import { TeamProvider } from "@/contexts/TeamContext";
 import { GearProvider } from "@/contexts/GearContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { SearchProvider } from "@/contexts/SearchContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Lazy-loaded pages
@@ -29,8 +30,19 @@ const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
+/** Scroll to top on route change */
+function ScrollToTop({ scrollRef }: { scrollRef: React.RefObject<HTMLDivElement | null> }) {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [location, scrollRef]);
+  return null;
+}
+
 /** Shared layout shell used by all routes */
-function AppShellContent({ children }: { children: React.ReactNode }) {
+function AppShellContent({ children, scrollRef }: { children: React.ReactNode; scrollRef: React.RefObject<HTMLDivElement | null> }) {
   const { isNotificationOpen } = useDashboard();
   return (
     <div
@@ -45,7 +57,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Navbar />
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
             {children}
           </div>
           <Footer />
@@ -58,10 +70,10 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({ children, scrollRef }: { children: React.ReactNode; scrollRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <DashboardProvider>
-      <AppShellContent>{children}</AppShellContent>
+      <AppShellContent scrollRef={scrollRef}>{children}</AppShellContent>
     </DashboardProvider>
   );
 }
@@ -81,59 +93,63 @@ function GuestOnly({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const scrollRef = useRef<HTMLDivElement>(null);
   return (
-    <Suspense fallback={<PageTransitionLoader />}>
-      <Switch>
-        <Route path="/auth">
-          <GuestOnly>
-            <AuthPage />
-          </GuestOnly>
-        </Route>
-        <Route path="/">
-          <RequireAuth>
-            <AppShell>
-              <Dashboard />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route path="/dashboard/gears">
-          <RequireAuth>
-            <AppShell>
-              <GearEquipmentPage />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route path="/dashboard/team">
-          <RequireAuth>
-            <AppShell>
-              <TeamPage />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route path="/dashboard/schedule">
-          <RequireAuth>
-            <AppShell>
-              <SchedulePage />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route path="/dashboard/wallet">
-          <RequireAuth>
-            <AppShell>
-              <WalletPage />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route path="/dashboard/messages">
-          <RequireAuth>
-            <AppShell>
-              <ChatPage />
-            </AppShell>
-          </RequireAuth>
-        </Route>
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
+    <>
+      <ScrollToTop scrollRef={scrollRef} />
+      <Suspense fallback={<PageTransitionLoader />}>
+        <Switch>
+          <Route path="/auth">
+            <GuestOnly>
+              <AuthPage />
+            </GuestOnly>
+          </Route>
+          <Route path="/">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <Dashboard />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route path="/dashboard/gears">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <GearEquipmentPage />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route path="/dashboard/team">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <TeamPage />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route path="/dashboard/schedule">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <SchedulePage />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route path="/dashboard/wallet">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <WalletPage />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route path="/dashboard/messages">
+            <RequireAuth>
+              <AppShell scrollRef={scrollRef}>
+                <ChatPage />
+              </AppShell>
+            </RequireAuth>
+          </Route>
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    </>
   );
 }
 
@@ -151,7 +167,9 @@ function AppProviders({ children }: { children: React.ReactNode }) {
           <FinanceProvider>
             <TeamProvider>
               <GearProvider>
-                <ChatProvider>{children}</ChatProvider>
+                <ChatProvider>
+                  <SearchProvider>{children}</SearchProvider>
+                </ChatProvider>
               </GearProvider>
             </TeamProvider>
           </FinanceProvider>

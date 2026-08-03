@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   Bell,
@@ -22,6 +22,7 @@ import {
   Calendar,
   DollarSign,
   Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,12 +46,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "next-themes";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { AuthSlides } from "@/data/cloudinary-images";
+import { useSearch, SearchResult } from "@/contexts/SearchContext";
 
 export function Navbar() {
   const { toggleNotification } = useDashboard();
   const [, setLocation] = useLocation();
   const { currentUser, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { searchResults } = useSearch();
 
   // Dialog popups states
   const [activePopup, setActivePopup] = useState<string | null>(null);
@@ -61,6 +64,39 @@ export function Navbar() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+
+  // Update search results when query changes
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setResults(searchResults(searchQuery));
+      setShowSearchResults(true);
+    } else {
+      setResults([]);
+      setShowSearchResults(false);
+    }
+  }, [searchQuery, searchResults]);
+
+  // Handle search result click
+  const handleResultClick = (result: SearchResult) => {
+    setLocation(result.page);
+    setSearchQuery("");
+    setShowSearchResults(false);
+  };
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".search-container")) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const displayName = currentUser?.fullName || "User";
   const displayRole = currentUser?.role
@@ -76,15 +112,27 @@ export function Navbar() {
   return (
     <nav className="flex items-center justify-between py-2 px-6 border-b border-border/40 bg-background/50 backdrop-blur-sm relative z-50">
       {/* Search Section */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 search-container relative">
         <div className="group flex items-center gap-2 px-3 h-9 rounded-lg bg-muted/50 border border-border/60 focus-within:border-primary/50 transition-colors w-80">
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
             placeholder="Search everything..."
             className="flex-1 min-w-0 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
           />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setShowSearchResults(false);
+              }}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
           <span className="flex items-center gap-1 shrink-0">
             <kbd className="px-1 py-0.5 text-[9px] font-medium text-muted-foreground bg-muted border border-border/60 rounded-md">
               ⌘
@@ -94,6 +142,51 @@ export function Navbar() {
             </kbd>
           </span>
         </div>
+
+        {/* Search Results Dropdown */}
+        {showSearchResults && results.length > 0 && (
+          <div className="absolute top-full left-0 mt-2 w-80 max-h-80 overflow-y-auto rounded-xl border border-border/60 bg-popover shadow-2xl z-50 animate-in fade-in-0 zoom-in-95">
+            <div className="p-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                {results.length} results found
+              </p>
+              <div className="mt-1 space-y-0.5">
+                {results.map((result) => (
+                  <button
+                    key={`${result.type}-${result.id}`}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <span className="text-lg">{result.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {result.title}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {result.subtitle}
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">
+                      {result.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSearchResults && results.length === 0 && (
+          <div className="absolute top-full left-0 mt-2 w-80 rounded-xl border border-border/60 bg-popover shadow-2xl z-50 animate-in fade-in-0 zoom-in-95">
+            <div className="p-4 text-center">
+              <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs font-medium text-foreground">No results found</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Try a different search term
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right Section: Tools & Status */}

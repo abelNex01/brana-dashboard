@@ -40,7 +40,7 @@ export const ServiceLogos = memo(function ServiceLogos({ isExpanded }: ServiceLo
   if (!isExpanded) {
     return (
       <div className="flex flex-col gap-2">
-        {services.slice(0, 3).map((service) => (
+        {services.map((service) => (
           <div
             key={service.name}
             className="w-9 h-9 flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer"
@@ -56,7 +56,7 @@ export const ServiceLogos = memo(function ServiceLogos({ isExpanded }: ServiceLo
 
   return (
     <div className="w-full">
-      <p className="mb-3 px-2 text-[10px] font-medium uppercase tracking-[0.02em] text-[#666]">
+      <p className="mb-3 px-2 text-[10px] font-medium uppercase tracking-[0.02em] text-muted-foreground">
         Services
       </p>
       <div className="grid grid-cols-5 gap-2">
@@ -70,7 +70,7 @@ export const ServiceLogos = memo(function ServiceLogos({ isExpanded }: ServiceLo
             <div className="w-8 h-8 flex items-center justify-center">
               <img src={service.icon} alt={service.name} className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-medium text-[#888] group-hover:text-[#aaa] transition-colors text-center leading-tight">
+            <span className="text-[9px] font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center leading-tight">
               {service.name}
             </span>
           </div>

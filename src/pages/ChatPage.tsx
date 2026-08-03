@@ -11,6 +11,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useLocation } from "wouter";
 import {
   Send,
   MoreVertical,
@@ -23,8 +24,6 @@ import {
   Trash2,
   Check,
   CheckCheck,
-  Plus,
-  X,
   Info,
   ArrowLeft,
   Play,
@@ -37,7 +36,6 @@ import {
   Clock,
   Send as SendIcon,
   Trash,
-  ChevronDown,
   Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -157,117 +155,31 @@ const minutesAgo = (n: number) => new Date(NOW - n * 60_000);
 const hoursAgo = (n: number) => new Date(NOW - n * 3_600_000);
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000);
 
-const SEED_PEOPLE: ChatParticipant[] = [
-  { id: "u-director", name: "Leyton Graves", role: "Support Team", isOnline: true, avatar: "https://i.pravatar.cc/150?u=leyton" },
-  { id: "u-cinematographer", name: "Elias Holly", role: "Engineering", isOnline: true, avatar: "https://i.pravatar.cc/150?u=elias" },
-  { id: "u-gaffer", name: "Pierre Smith", role: "Sales", isOnline: false, avatar: "https://i.pravatar.cc/150?u=pierre" },
-  { id: "u-editor", name: "Blake Kraft", role: "Design", isOnline: true, avatar: "https://i.pravatar.cc/150?u=blake" },
-  { id: "u-sound", name: "Anna Babson", role: "Customer Success", isOnline: false, avatar: "https://i.pravatar.cc/150?u=anna" },
+// Default seed data - will be replaced with actual team members if available
+const DEFAULT_SEED_PEOPLE: ChatParticipant[] = [
+  { id: "u-director", name: "Director", role: "Director", isOnline: true },
+  { id: "u-cinematographer", name: "Cinematographer", role: "Cinematographer", isOnline: true },
+  { id: "u-gaffer", name: "Gaffer", role: "Gaffer", isOnline: false },
 ];
-const PEOPLE_BY_ID: Record<string, ChatParticipant> = Object.fromEntries(
-  SEED_PEOPLE.map((p) => [p.id, p])
-);
 
-const SEED_MESSAGES: Record<string, ChatMessage[]> = {
+const DEFAULT_SEED_MESSAGES: Record<string, ChatMessage[]> = {
   "c-director": [
     {
       id: "msg-director-1",
       conversationId: "c-director",
       senderId: "u-director",
-      senderName: "Leyton Graves",
-      content: "How can I better manage all of my email?",
+      senderName: "Director",
+      content: "Can we review the shooting schedule for next week's location shoot?",
       timestamp: hoursAgo(2.5),
       status: "read",
     },
-    {
-      id: "msg-director-2",
-      conversationId: "c-director",
-      senderId: CURRENT_USER_ID,
-      senderName: "Support Team",
-      content: "Hi Leyton,\nHappy to help!\n\nAnna Babson\nCustomer Success Manager\nCloud Content Consulting\n(123) 456-7890",
-      timestamp: hoursAgo(2),
-      status: "read",
-    },
-  ],
-  "c-cinematographer": [
-    {
-      id: "msg-cinematographer-1",
-      conversationId: "c-cinematographer",
-      senderId: "u-cinematographer",
-      senderName: "Elias Holly",
-      content: "Urgent: functionality test for the new deployment.",
-      timestamp: hoursAgo(4),
-      status: "read",
-    }
-  ],
-  "c-gaffer": [
-    {
-      id: "msg-gaffer-1",
-      conversationId: "c-gaffer",
-      senderId: "u-gaffer",
-      senderName: "Pierre Smith",
-      content: "Hello, help me with email number 3",
-      timestamp: daysAgo(2),
-      status: "read",
-    }
-  ],
-  "c-editor": [
-    {
-      id: "msg-editor-1",
-      conversationId: "c-editor",
-      senderId: "u-editor",
-      senderName: "Blake Kraft",
-      content: "Hello, help me with email number 4",
-      timestamp: daysAgo(2),
-      status: "read",
-    }
   ],
 };
 
-function lastActivityFor(conversationId: string): Date {
-  const msgs = SEED_MESSAGES[conversationId];
+function lastActivityFor(conversationId: string, messages: Record<string, ChatMessage[]>): Date {
+  const msgs = messages[conversationId];
   return msgs && msgs.length > 0 ? msgs[msgs.length - 1].timestamp : new Date();
 }
-
-const SEED_CONVERSATIONS: Conversation[] = [
-  {
-    id: "c-director",
-    type: "direct",
-    title: "Leyton Graves",
-    participants: [PEOPLE_BY_ID["u-director"]],
-    isOnline: true,
-    isTyping: false,
-    unreadCount: 2,
-    lastActivityAt: lastActivityFor("c-director"),
-  },
-  {
-    id: "c-cinematographer",
-    type: "direct",
-    title: "Elias Holly",
-    participants: [PEOPLE_BY_ID["u-cinematographer"]],
-    isOnline: true,
-    unreadCount: 0,
-    lastActivityAt: lastActivityFor("c-cinematographer"),
-  },
-  {
-    id: "c-gaffer",
-    type: "direct",
-    title: "Pierre Smith",
-    participants: [PEOPLE_BY_ID["u-gaffer"]],
-    isOnline: true,
-    unreadCount: 3,
-    lastActivityAt: lastActivityFor("c-gaffer"),
-  },
-  {
-    id: "c-editor",
-    type: "direct",
-    title: "Blake Kraft",
-    participants: [PEOPLE_BY_ID["u-editor"]],
-    isOnline: false,
-    unreadCount: 3,
-    lastActivityAt: lastActivityFor("c-editor"),
-  },
-];
 
 /* ------------------------------- Sub components ---------------------------- */
 
@@ -275,7 +187,11 @@ function Avatar({ name, src, size = "md", className }: { name: string; src?: str
   const dims = size === "lg" ? "w-12 h-12 text-lg" : size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
   return (
     <div className={cn("relative flex-shrink-0 rounded-full overflow-hidden bg-zinc-800 dark:bg-zinc-800 flex items-center justify-center font-medium text-white", dims, className)}>
-      {src ? <img src={src} alt={name} className="w-full h-full object-cover" /> : <span>{name.charAt(0).toUpperCase()}</span>}
+      {src ? (
+        <img src={src} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <img src="/favicon.svg" alt={name} className="w-full h-full object-cover p-1" />
+      )}
     </div>
   );
 }
@@ -295,17 +211,17 @@ function MessageBubble({ message, isCurrentUser }: { message: ChatMessage; isCur
           : "bg-card dark:bg-[#0C0C0E] border-border dark:border-white/[0.05] mr-auto"
       )}>
         <div className="flex items-center gap-3 mb-4">
-          <Avatar name={message.senderName} src={message.senderAvatar} size="sm" />
+          <Avatar name={message.senderName} size="sm" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-foreground dark:text-zinc-200 truncate">
-                {isCurrentUser ? `From: support@cloudcontent.com` : message.senderName}
+                {isCurrentUser ? `From: production@branafilms.com` : message.senderName}
               </p>
               <button className="text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300">
                 <MoreVertical className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground dark:text-zinc-500 truncate">To: {isCurrentUser ? "Leyton Graves" : "Support Team"}</p>
+            <p className="text-xs text-muted-foreground dark:text-zinc-500 truncate">To: Production Team</p>
           </div>
         </div>
         
@@ -332,8 +248,8 @@ function MessageBubble({ message, isCurrentUser }: { message: ChatMessage; isCur
 }
 
 function ConversationListItem({ conversation, lastMessage, isActive, onClick }: { conversation: Conversation; lastMessage?: ChatMessage; isActive: boolean; onClick: () => void; }) {
-  const isEvent = conversation.title.includes("Leyton");
-  const isTest = conversation.title.includes("Elias");
+  const isEvent = conversation.title.includes("Director");
+  const isTest = conversation.title.includes("Cinematographer");
 
   return (
     <motion.button
@@ -344,154 +260,121 @@ function ConversationListItem({ conversation, lastMessage, isActive, onClick }: 
       exit={{ opacity: 0 }}
       onClick={onClick}
       className={cn(
-        "w-full flex flex-col p-4 rounded-2xl text-left transition-all relative overflow-hidden mb-2 group",
+        "w-full flex items-center gap-3 px-3 py-3 text-left transition-all relative group border-l-2",
         isActive
-          ? "bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 shadow-lg border-transparent dark:bg-gradient-to-br dark:from-gray-700 dark:via-gray-800 dark:to-gray-900"
-          : "bg-muted dark:bg-[#141416] hover:bg-accent dark:hover:bg-[#1A1A1D] border border-border dark:border-white/[0.04]"
+          ? "bg-accent/50 dark:bg-white/[0.03] border-l-blue-500"
+          : "hover:bg-accent/30 dark:hover:bg-white/[0.02] border-l-transparent"
       )}
     >
-      <div className="flex items-start justify-between w-full mb-3">
-        <div className="flex items-center gap-3">
-          <Avatar name={conversation.title} src={conversation.participants[0]?.avatar} size="sm" className="ring-2 ring-black/20" />
-          <p className={cn("text-sm font-semibold truncate", isActive ? "text-white" : "text-foreground dark:text-zinc-200")}>
+      <div className="relative flex-shrink-0">
+        <Avatar name={conversation.title} size="sm" />
+        {conversation.isOnline && (
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background dark:border-[#0A0A0C]" />
+        )}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <p className={cn("text-sm font-medium truncate", isActive ? "text-foreground dark:text-white" : "text-foreground dark:text-zinc-300")}>
             {conversation.title}
           </p>
+          <span className={cn("text-[11px] font-medium flex-shrink-0 ml-2", isActive ? "text-blue-500" : "text-muted-foreground dark:text-zinc-500")}>
+            {lastMessage ? formatListTime(lastMessage.timestamp) : "NEW"}
+          </span>
         </div>
-        <span className={cn("text-[10px] uppercase font-semibold tracking-wider", isActive ? "text-white/80" : "text-muted-foreground dark:text-zinc-500")}>
-          {lastMessage ? formatListTime(lastMessage.timestamp) : "NEW"}
-        </span>
-      </div>
-
-      <div className="flex items-end justify-between w-full gap-2">
-        <p className={cn("text-[13px] truncate flex-1 font-light", isActive ? "text-white/90" : "text-muted-foreground dark:text-zinc-400")}>
-          {conversation.isTyping ? "Typing..." : (lastMessage?.content || "No messages yet")}
-        </p>
         
-        {isEvent && (
-          <span className="px-2.5 py-1 rounded-full bg-gray-500 text-white text-[9px] font-extrabold tracking-widest uppercase flex-shrink-0 shadow-sm">
-            #EVENTS
-          </span>
-        )}
-        {isTest && (
-          <span className="px-2.5 py-1 rounded-full bg-gray-500 text-white text-[9px] font-extrabold tracking-widest uppercase flex-shrink-0 shadow-sm">
-            #TEST
-          </span>
-        )}
-        {!isEvent && !isTest && conversation.unreadCount > 0 && (
-          <div className="w-5 h-5 rounded-full bg-white/[0.12] text-white text-[10px] font-bold flex items-center justify-center">
-            {conversation.unreadCount}
-          </div>
-        )}
-      </div>
-
-      {!isActive && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/20 text-purple-300 text-[10px] font-medium flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-purple-500/50 flex items-center justify-center"><Hash className="w-2 h-2 text-white" /></span>
-            Drafts
-          </span>
-          <span className="text-[11px] text-muted-foreground dark:text-zinc-600 truncate">Hi {conversation.title.split(' ')[0]}, happy to help!</span>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground dark:text-zinc-500 truncate flex-1">
+            {conversation.isTyping ? "Typing..." : (lastMessage?.content || "No messages yet")}
+          </p>
+          
+          {conversation.unreadCount > 0 && !isActive && (
+            <span className="flex-shrink-0 w-5 h-5 bg-blue-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
+              {conversation.unreadCount}
+            </span>
+          )}
         </div>
-      )}
+      </div>
     </motion.button>
   );
 }
 
-function InfoPanel({ conversation }: { conversation: Conversation }) {
-  return (
-    <motion.aside
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="hidden xl:flex w-[320px] flex-col overflow-y-auto bg-card dark:bg-[#0A0A0C] border-l border-border dark:border-white/[0.04] p-5"
-    >
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" className="h-8 bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] text-foreground dark:text-zinc-300 text-xs px-3 rounded-lg hover:bg-accent dark:hover:bg-white/[0.04]">
-          Salesforce <ChevronDown className="w-3 h-3 ml-2" />
-        </Button>
-        <button className="w-8 h-8 rounded-lg bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] flex items-center justify-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-white">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="flex gap-2 mb-6">
-        <Button className="flex-1 bg-white text-black hover:bg-zinc-200 text-[11px] h-8 rounded-lg font-semibold">
-          <FileText className="w-3 h-3 mr-1.5" /> Add Task
-        </Button>
-        <Button className="flex-1 bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] text-foreground dark:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] text-[11px] h-8 rounded-lg font-semibold">
-          <FileText className="w-3 h-3 mr-1.5" /> Add Note
-        </Button>
-      </div>
-
-      <div className="space-y-4 flex-1">
-        <div>
-          <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Subject</label>
-          <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
-            Schedule app training <ChevronDown className="w-3 h-3 text-muted-foreground dark:text-zinc-600" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Date Only</label>
-            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
-              12/29 <ChevronDown className="w-3 h-3 text-zinc-600" />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Status <span className="text-red-500">*</span></label>
-            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
-              Open <ChevronDown className="w-3 h-3 text-zinc-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Priority <span className="text-red-500">*</span></label>
-            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
-              Normal <ChevronDown className="w-3 h-3 text-zinc-600" />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] text-muted-foreground dark:text-zinc-500 font-medium mb-1.5 block">Assigned to ID <span className="text-red-500">*</span></label>
-            <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-2.5 text-[13px] text-foreground dark:text-zinc-300 flex justify-between items-center">
-              Steve Hackney <ChevronDown className="w-3 h-3 text-zinc-600" />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block">Description</label>
-          <div className="w-full bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.04] rounded-xl px-3 py-3 text-[13px] text-muted-foreground dark:text-zinc-400 min-h-[140px] relative">
-            Questions about cooperation, you will need to fill out a document |
-            <div className="absolute bottom-3 left-3 flex gap-2">
-              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><FileText className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><Paperclip className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><Smile className="w-3.5 h-3.5" /></button>
-              <button className="w-7 h-7 rounded bg-white/[0.03] dark:bg-white/[0.03] flex items-center justify-center text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300"><MoreVertical className="w-3.5 h-3.5" /></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <Button className="w-full bg-white text-black hover:bg-zinc-200 h-10 rounded-xl font-semibold text-sm">
-          <Plus className="w-4 h-4 mr-2" /> Add an Integration
-        </Button>
-      </div>
-    </motion.aside>
-  );
-}
 
 /* ---------------------------------- Page ----------------------------------- */
 
 export default function ChatPage() {
   const { currentUser } = useAuth();
   const { teamMembers } = useTeam();
+  const [location] = useLocation();
 
-  const [conversations, setConversations] = useState<Conversation[]>(SEED_CONVERSATIONS);
-  const [messagesByConversation, setMessagesByConversation] = useState<Record<string, ChatMessage[]>>(SEED_MESSAGES);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(SEED_CONVERSATIONS[0]?.id ?? null);
+  // Generate conversations from actual team members
+  const { conversations: generatedConversations, messages: generatedMessages } = useMemo(() => {
+    if (teamMembers.length === 0) {
+      const peopleById = Object.fromEntries(DEFAULT_SEED_PEOPLE.map((p) => [p.id, p]));
+      const convs = DEFAULT_SEED_PEOPLE.map((person, idx) => ({
+        id: `c-${person.id}`,
+        type: "direct" as ConversationType,
+        title: person.name,
+        participants: [person],
+        isOnline: person.isOnline,
+        isTyping: false,
+        unreadCount: idx === 0 ? 2 : 0,
+        lastActivityAt: lastActivityFor(`c-${person.id}`, DEFAULT_SEED_MESSAGES),
+      }));
+      return { conversations: convs, messages: DEFAULT_SEED_MESSAGES };
+    }
+
+    // Create conversations from actual team members
+    const people: ChatParticipant[] = teamMembers.slice(0, 5).map((member, idx) => ({
+      id: `u-${member.id}`,
+      name: member.name,
+      role: member.role || "Team Member",
+      isOnline: member.status === "Available",
+      avatar: member.avatar || member.image,
+    }));
+
+    const peopleById = Object.fromEntries(people.map((p) => [p.id, p]));
+
+    const messages: Record<string, ChatMessage[]> = {};
+    const sampleMessages = [
+      "Can we review the shooting schedule for next week's location shoot?",
+      "I need to check the lighting equipment for the night scene. Are the ARRI lights available?",
+      "The power distribution for the exterior setup is ready. Just need to confirm the generator rental.",
+      "First rough cut of the commercial is ready for review. Should I upload it to the shared drive?",
+      "Location scout confirmed the warehouse for Tuesday's shoot.",
+    ];
+
+    const convs = people.map((person, idx) => {
+      const convId = `c-${person.id}`;
+      messages[convId] = [
+        {
+          id: `msg-${person.id}-1`,
+          conversationId: convId,
+          senderId: person.id,
+          senderName: person.name,
+          content: sampleMessages[idx % sampleMessages.length],
+          timestamp: hoursAgo(idx + 1),
+          status: "read",
+        },
+      ];
+      return {
+        id: convId,
+        type: "direct" as ConversationType,
+        title: person.name,
+        participants: [person],
+        isOnline: person.isOnline,
+        isTyping: false,
+        unreadCount: idx === 0 ? 2 : 0,
+        lastActivityAt: lastActivityFor(convId, messages),
+      };
+    });
+
+    return { conversations: convs, messages };
+  }, [teamMembers]);
+
+  const [conversations, setConversations] = useState<Conversation[]>(generatedConversations);
+  const [messagesByConversation, setMessagesByConversation] = useState<Record<string, ChatMessage[]>>(generatedMessages);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(generatedConversations[0]?.id ?? null);
   const [listFilter, setListFilter] = useState<"all" | "open" | "unassigned">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
@@ -499,10 +382,18 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => { timeoutsRef.current.forEach(clearTimeout); };
   }, []);
+
+  // Scroll to top when component mounts or when navigating to chat page
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+  }, [location, selectedConversationId]);
 
   const lastMessageByConversation = useMemo(() => {
     const map: Record<string, ChatMessage | undefined> = {};
@@ -558,7 +449,7 @@ export default function ChatPage() {
       id: generateId("msg"),
       conversationId: selectedConversationId,
       senderId: CURRENT_USER_ID,
-      senderName: currentUser.fullName || "Support Team",
+      senderName: currentUser.fullName || "Production Team",
       senderAvatar: currentUser.avatar,
       content: trimmed,
       timestamp: new Date(),
@@ -583,7 +474,7 @@ export default function ChatPage() {
       
       {/* Inbox List Column */}
       <aside className={cn(
-        "w-full md:w-[320px] lg:w-[380px] bg-card dark:bg-[#0A0A0C] border-r border-border dark:border-white/[0.04] flex flex-col flex-shrink-0 relative z-10",
+        "w-full md:w-[320px] lg:w-[380px] bg-card dark:bg-[#0A0A0C] border-r border-border dark:border-white/[0.04] flex flex-col flex-shrink-0 relative z-10 overflow-hidden",
         selectedConversationId ? "hidden md:flex" : "flex"
       )}>
         <div className="p-5 pt-8 flex-shrink-0">
@@ -640,7 +531,7 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <main className={cn(
-        "flex-1 flex flex-col min-w-0 bg-background dark:bg-[#050505] relative",
+        "flex-1 flex flex-col min-w-0 bg-background dark:bg-[#050505] relative overflow-hidden",
         selectedConversationId ? "flex" : "hidden md:flex"
       )}>
         {selectedConversation ? (
@@ -654,7 +545,7 @@ export default function ChatPage() {
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h1 className="text-3xl font-light text-foreground dark:text-white tracking-tight">
-                  Hello, help me with email ...
+                  Production Coordination
                 </h1>
               </div>
               
@@ -674,7 +565,7 @@ export default function ChatPage() {
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto px-8 custom-scrollbar">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-8 custom-scrollbar">
               <AnimatePresence initial={false}>
                 {renderItems.map((item) =>
                   item.kind === "divider" ? null : (
@@ -688,12 +579,11 @@ export default function ChatPage() {
                   )
                 )}
               </AnimatePresence>
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="h-4" />
             </div>
 
-            <div className="p-6 pt-2 pb-8 flex-shrink-0 max-w-4xl w-full mx-auto">
+            <div className="p-6 pt-2 pb-8 flex-shrink-0 max-w-4xl w-full mx-auto bg-background dark:bg-[#050505]">
               <form onSubmit={handleSendMessage} className="relative">
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 to-transparent pointer-events-none -translate-y-full" />
                 <div className="bg-muted dark:bg-[#141416] border border-border dark:border-white/[0.06] rounded-2xl p-2 flex items-center gap-2 shadow-2xl relative z-10 backdrop-blur-xl">
                   <div className="flex items-center gap-1 pl-2">
                      <button type="button" className="w-8 h-8 rounded-lg text-muted-foreground dark:text-zinc-500 hover:text-foreground dark:hover:text-zinc-300 hover:bg-accent dark:hover:bg-white/[0.04] flex items-center justify-center transition-colors">
@@ -739,9 +629,6 @@ export default function ChatPage() {
         )}
       </main>
 
-      {/* Right Sidebar Info Panel */}
-      {selectedConversation && <InfoPanel conversation={selectedConversation} />}
-      
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;

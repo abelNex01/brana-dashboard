@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Youtube,
   Instagram,
@@ -8,198 +8,708 @@ import {
   ChevronUp,
   ArrowUpRight,
   Cloud,
+  RotateCw,
+  SlidersHorizontal,
+  ChevronDown,
+  ArrowDown,
+  Info,
+  Clock,
+  Plus,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 
-export function Footer() {
+/* ── Sub‑components: MetricsRow, SystemStatusCard, PerformanceCard, TeamDataCard ── */
+
+const YELLOW = "text-[#EBFF38]";
+
+interface Metric {
+  label: string;
+  value: React.ReactNode;
+}
+
+/* ---------- Live analytics ----------
+ * Every value here is measured directly in the browser — nothing is mocked.
+ * Team figures are the one exception (see TeamSnapshot below): this file
+ * has no access to TeamContext, so they arrive as a prop with sample
+ * defaults until you wire up the real context where <Footer /> is used.
+ */
+interface LiveAnalytics {
+  isOnline: boolean;
+  uptimeLabel: string;
+  clockLabel: string;
+  storageUsedLabel: string;
+  recordCount: number;
+  avgLoadMs: number | null;
+  resourceCount: number;
+  lastSyncedLabel: string;
+  autoSyncEnabled: boolean;
+  setAutoSyncEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  refresh: () => void;
+}
+
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+}
+
+function measureLocalStorage(): { kb: number; keys: number } {
+  try {
+    let bytes = 0;
+    let keys = 0;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key) continue;
+      bytes += key.length + (window.localStorage.getItem(key)?.length ?? 0);
+      keys += 1;
+    }
+    return { kb: bytes / 1024, keys };
+  } catch {
+    return { kb: 0, keys: 0 };
+  }
+}
+
+function measurePageLoad(): number | null {
+  try {
+    const [nav] = performance.getEntriesByType(
+      "navigation"
+    ) as PerformanceNavigationTiming[];
+    if (nav && nav.loadEventEnd > 0) {
+      return Math.max(0, Math.round(nav.loadEventEnd - nav.startTime));
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function useLiveAnalytics(): LiveAnalytics {
+  const [mountedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const [storage, setStorage] = useState(() => measureLocalStorage());
+  const [resourceCount, setResourceCount] = useState(0);
+  const [avgLoadMs, setAvgLoadMs] = useState<number | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState(() => Date.now());
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
+
+  const refresh = useCallback(() => {
+    setStorage(measureLocalStorage());
+    setResourceCount(performance.getEntriesByType("resource").length);
+    setLastRefreshed(Date.now());
+  }, []);
+
+  // Second-by-second clock / uptime tick
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  // Initial measurement + connectivity listeners
+  useEffect(() => {
+    refresh();
+    const measureLoad = () => setAvgLoadMs(measurePageLoad());
+    measureLoad();
+    if (document.readyState !== "complete") {
+      window.addEventListener("load", measureLoad);
+    }
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("load", measureLoad);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, [refresh]);
+
+  // Auto-sync every 5s while enabled
+  useEffect(() => {
+    if (!autoSyncEnabled) return;
+    const sync = setInterval(refresh, 5000);
+    return () => clearInterval(sync);
+  }, [autoSyncEnabled, refresh]);
+
+  const uptimeLabel = formatDuration(now - mountedAt);
+  const clockLabel = new Date(now).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const storageUsedLabel =
+    storage.kb >= 1024
+      ? `${(storage.kb / 1024).toFixed(2)} MB`
+      : `${storage.kb.toFixed(1)} KB`;
+
+  const secondsSinceSync = Math.max(0, Math.floor((now - lastRefreshed) / 1000));
+  const lastSyncedLabel =
+    secondsSinceSync < 2
+      ? "Just now"
+      : secondsSinceSync < 60
+      ? `${secondsSinceSync}s ago`
+      : `${Math.floor(secondsSinceSync / 60)}m ago`;
+
+  return {
+    isOnline,
+    uptimeLabel,
+    clockLabel,
+    storageUsedLabel,
+    recordCount: storage.keys,
+    avgLoadMs,
+    resourceCount,
+    lastSyncedLabel,
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    refresh,
+  };
+}
+
+/* ---------- Team snapshot ----------
+ * Replace the default fallback with real numbers from TeamContext:
+ *
+ *   const { team } = useTeam();
+ *   <Footer teamSnapshot={{
+ *     available: team.filter(m => m.status === "Available").length,
+ *     inField:   team.filter(m => m.status === "In Field").length,
+ *     editing:   team.filter(m => m.status === "Editing").length,
+ *     offDuty:   team.filter(m => m.status === "Off Duty").length,
+ *   }} />
+ */
+interface TeamSnapshot {
+  available: number;
+  inField: number;
+  editing: number;
+  offDuty: number;
+}
+
+const DEFAULT_TEAM_SNAPSHOT: TeamSnapshot = {
+  available: 8,
+  inField: 6,
+  editing: 4,
+  offDuty: 3,
+};
+
+interface FooterProps {
+  teamSnapshot?: TeamSnapshot;
+}
+
+/* ---------- MetricsRow ---------- */
+const MetricsRow: React.FC<{ analytics: LiveAnalytics; teamSnapshot: TeamSnapshot }> = ({
+  analytics,
+  teamSnapshot,
+}) => {
+  const activeTeam = teamSnapshot.available + teamSnapshot.inField + teamSnapshot.editing;
+
+  const metrics: Metric[] = [
+    {
+      label: "Status:",
+      value: (
+        <span
+          className={`inline-flex items-center gap-1.5 ${
+            analytics.isOnline ? YELLOW : "text-[#E84142]"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              analytics.isOnline ? "bg-[#EBFF38]" : "bg-[#E84142]"
+            }`}
+          />
+          {analytics.isOnline ? "Online" : "Offline"}
+        </span>
+      ),
+    },
+    { label: "Session Uptime:", value: <span className={YELLOW}>{analytics.uptimeLabel}</span> },
+    { label: "Storage Used:", value: <span className={YELLOW}>{analytics.storageUsedLabel}</span> },
+    {
+      label: "Avg Load:",
+      value: (
+        <span className={YELLOW}>
+          {analytics.avgLoadMs !== null ? `${analytics.avgLoadMs}ms` : "—"}
+        </span>
+      ),
+    },
+    { label: "Active Team:", value: <span className={YELLOW}>{activeTeam}</span> },
+    { label: "Last Synced:", value: <span className={YELLOW}>{analytics.lastSyncedLabel}</span> },
+  ];
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {metrics.map((m) => (
+        <div
+          key={m.label}
+          className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium tracking-wide"
+        >
+          <span className="text-muted-foreground">{m.label}</span>
+          <span>{m.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ---------- CurrencyBlock (shared by SystemStatusCard) ---------- */
+interface CurrencyBlockProps {
+  direction: string;
+  amount: string;
+  fiat: string;
+  token: string;
+  network: string;
+  balance: string;
+  tokenBg: string;
+  tokenGlyph: string;
+  showMax?: boolean;
+}
+
+const CurrencyBlock: React.FC<CurrencyBlockProps> = ({
+  direction,
+  amount,
+  fiat,
+  token,
+  network,
+  balance,
+  tokenBg,
+  tokenGlyph,
+  showMax,
+}) => (
+  <div className="rounded-2xl border border-border bg-muted p-4">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      {direction}
+    </div>
+    <div className="mt-1 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <div className="truncate text-2xl font-semibold text-foreground">{amount}</div>
+        <div className="mt-0.5 truncate text-xs text-muted-foreground">{fiat}</div>
+      </div>
+      <div className="shrink-0 text-right">
+        <button className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-1.5 pr-2.5">
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${tokenBg}`}
+          >
+            {tokenGlyph}
+          </span>
+          <span className="text-left leading-none">
+            <span className="block text-sm font-semibold text-foreground">{token}</span>
+            <span className="block text-[9px] uppercase text-muted-foreground">{network}</span>
+          </span>
+          <ChevronDown size={14} className="text-muted-foreground" />
+        </button>
+        <div className="mt-1.5 text-[11px] text-muted-foreground">
+          {balance}{" "}
+          {showMax && <span className="font-semibold text-[#EBFF38]">Max</span>}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ---------- SystemStatusCard ---------- */
+const SystemStatusCard: React.FC<{ analytics: LiveAnalytics }> = ({ analytics }) => {
+  return (
+    <div className="flex flex-col rounded-2xl border border-border bg-card p-4">
+      {/* Card header */}
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">System Status</h3>
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <button
+            onClick={analytics.refresh}
+            className="transition hover:text-foreground"
+            aria-label="Refresh live metrics"
+          >
+            <RotateCw size={15} />
+          </button>
+          <button className="transition hover:text-foreground" aria-label="Storage settings">
+            <SlidersHorizontal size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Storage used / resources loaded */}
+      <div className="relative flex flex-col gap-2">
+        <CurrencyBlock
+          direction="USED"
+          amount={analytics.storageUsedLabel}
+          fiat={`${analytics.recordCount} local records`}
+          token={analytics.isOnline ? "Synced" : "Offline"}
+          network="STATUS"
+          balance={`Updated ${analytics.lastSyncedLabel}`}
+          tokenBg={analytics.isOnline ? "bg-[#EBFF38] text-black" : "bg-[#E84142] text-white"}
+          tokenGlyph="●"
+        />
+        <button
+          className="absolute left-1/2 top-1/2 z-10 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-card bg-muted text-foreground/80 transition hover:text-foreground"
+          aria-label="View storage breakdown"
+        >
+          <ArrowDown size={15} />
+        </button>
+        <CurrencyBlock
+          direction="LOADED"
+          amount={String(analytics.resourceCount)}
+          fiat="Scripts, styles & assets"
+          token="This page"
+          network="PERFORMANCE"
+          balance={`Load time ${
+            analytics.avgLoadMs !== null ? `${analytics.avgLoadMs}ms` : "—"
+          }`}
+          tokenBg="bg-[#627EEA] text-white"
+          tokenGlyph="◈"
+        />
+      </div>
+
+      {/* Auto-sync toggle */}
+      <div className="mt-2 flex items-center justify-between rounded-2xl border border-border bg-muted px-4 py-3">
+        <span className="text-xs font-medium text-foreground/80">Auto-Sync (every 5s)</span>
+        <button
+          onClick={() => analytics.setAutoSyncEnabled((v) => !v)}
+          aria-label="Toggle auto-sync"
+          className={`relative h-5 w-9 rounded-full transition-colors ${
+            analytics.autoSyncEnabled ? "bg-[#EBFF38]" : "bg-white/15"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+              analytics.autoSyncEnabled ? "left-[18px]" : "left-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Sync info row */}
+      <div className="mt-2 flex items-center justify-between rounded-2xl border border-border bg-muted px-4 py-2.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <Info size={12} /> Tracking {analytics.recordCount} local records
+        </span>
+        <span className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-foreground/70">
+          <Clock size={11} /> {analytics.lastSyncedLabel}
+        </span>
+      </div>
+
+      {/* Manual sync button */}
+      <button
+        onClick={analytics.refresh}
+        className="mt-3 w-full rounded-2xl bg-[#EBFF38] py-3.5 text-sm font-semibold text-black transition hover:bg-[#dff01f]"
+      >
+        Sync Now
+      </button>
+    </div>
+  );
+};
+
+/* ---------- PerformanceCard ---------- */
+const PERFORMANCE_PERIODS = ["1H", "6H", "24H", "7D", "30D", "90D", "All"];
+const TREND_LABELS = ["-6h", "-5h", "-4h", "-3h", "-2h", "-1h", "Now"];
+
+const Chart: React.FC = () => (
+  <svg viewBox="0 0 320 130" className="h-36 w-full" preserveAspectRatio="none">
+    <defs>
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+    <line
+      x1="118"
+      y1="8"
+      x2="118"
+      y2="122"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeDasharray="3 3"
+      className="text-foreground/25"
+    />
+    <path
+      d="M0,78 C14,60 26,42 40,40 C54,38 62,52 74,58 C86,64 96,52 106,58 C112,62 115,70 118,74
+         C126,86 138,100 150,96 C160,92 164,66 176,58 C186,52 192,66 200,74 C210,84 220,92 232,86
+         C244,80 250,62 262,60 C276,58 292,72 320,66"
+      fill="none"
+      stroke="#EBFF38"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      filter="url(#glow)"
+    />
+    <circle cx="118" cy="74" r="5" fill="#EBFF38" filter="url(#glow)" />
+    <circle cx="118" cy="74" r="2" fill="currentColor" className="text-card" />
+  </svg>
+);
+
+const PerformanceCard: React.FC<{ analytics: LiveAnalytics }> = ({ analytics }) => {
+  const [period, setPeriod] = useState("24H");
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-border bg-card p-4">
+      <h3 className="mb-3 text-sm font-semibold text-foreground">Performance</h3>
+
+      <div className="rounded-2xl border border-border bg-muted p-4">
+        <div className="text-3xl font-semibold tracking-tight text-foreground">
+          {analytics.uptimeLabel}
+        </div>
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          Session uptime · Avg load{" "}
+          {analytics.avgLoadMs !== null ? `${analytics.avgLoadMs}ms` : "—"}
+        </div>
+      </div>
+
+      <div className="mt-4 flex-1">
+        <Chart />
+        <div className="mt-1 flex justify-between px-1 text-[10px] text-muted-foreground/65">
+          {TREND_LABELS.map((l) => (
+            <span key={l}>{l}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center gap-1 bg-muted rounded-md p-0.5 border border-border dark:bg-zinc-900 dark:border-zinc-800">
+        {PERFORMANCE_PERIODS.map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`flex-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+              period === p
+                ? "bg-foreground text-background dark:bg-zinc-800/60 dark:text-zinc-100"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground dark:text-zinc-400 dark:hover:bg-zinc-800/30 dark:hover:text-zinc-200"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ---------- TeamDataCard ---------- */
+interface MetricRow {
+  title: string;
+  subtitle: string;
+  value: string;
+  detail: string;
+  bg: string;
+  glyph: string;
+}
+
+interface MetricGroup {
+  title: string;
+  avatarBg: string;
+  avatarGlyph: string;
+  rows: MetricRow[];
+}
+
+function buildMetricGroups(team: TeamSnapshot, analytics: LiveAnalytics): MetricGroup[] {
+  const total = team.available + team.inField + team.editing + team.offDuty;
+
+  return [
+    {
+      title: "Team",
+      avatarBg: "bg-[#EBFF38]/15 text-[#EBFF38]",
+      avatarGlyph: "👥",
+      rows: [
+        {
+          title: "Available",
+          subtitle: "Ready to assign",
+          value: String(team.available),
+          detail: `${team.available} of ${total} crew`,
+          bg: "bg-[#26A17B]/20 text-[#26A17B]",
+          glyph: "🟢",
+        },
+        {
+          title: "In Field",
+          subtitle: "On location",
+          value: String(team.inField),
+          detail: `${team.inField} of ${total} crew`,
+          bg: "bg-[#F7931A]/20 text-[#F7931A]",
+          glyph: "🎥",
+        },
+        {
+          title: "Editing",
+          subtitle: "Post-production",
+          value: String(team.editing),
+          detail: `${team.editing} of ${total} crew`,
+          bg: "bg-[#627EEA]/20 text-[#627EEA]",
+          glyph: "🎞️",
+        },
+        {
+          title: "Off Duty",
+          subtitle: "Not scheduled",
+          value: String(team.offDuty),
+          detail: `${team.offDuty} of ${total} crew`,
+          bg: "bg-muted-foreground/20 text-muted-foreground",
+          glyph: "⏸️",
+        },
+      ],
+    },
+    {
+      title: "Data",
+      avatarBg: "bg-[#627EEA]/15 text-[#627EEA]",
+      avatarGlyph: "💾",
+      rows: [
+        {
+          title: "Storage Used",
+          subtitle: "Browser cache",
+          value: analytics.storageUsedLabel,
+          detail: "localStorage",
+          bg: "bg-[#345D9D]/20 text-[#345D9D]",
+          glyph: "📦",
+        },
+        {
+          title: "Records",
+          subtitle: "Synced items",
+          value: String(analytics.recordCount),
+          detail: "Team, gear & finance",
+          bg: "bg-[#FFA409]/20 text-[#FFA409]",
+          glyph: "🔄",
+        },
+      ],
+    },
+  ];
+}
+
+const MetricValueRow: React.FC<{ row: MetricRow }> = ({ row }) => (
+  <div className="flex items-center justify-between border-t border-border/30 px-4 py-2.5">
+    <div className="flex items-center gap-2.5">
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${row.bg}`}
+      >
+        {row.glyph}
+      </span>
+      <span className="leading-tight">
+        <span className="block text-xs font-semibold text-foreground">{row.title}</span>
+        <span className="block text-[9px] uppercase text-muted-foreground/65">
+          {row.subtitle}
+        </span>
+      </span>
+    </div>
+    <div className="flex items-center gap-2.5">
+      <span className="text-right leading-tight">
+        <span className="block text-xs font-semibold text-foreground">{row.value}</span>
+        <span className="block text-[10px] text-muted-foreground/65">{row.detail}</span>
+      </span>
+      <button
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground/6 text-muted-foreground transition hover:text-foreground"
+        aria-label={`${row.title} details`}
+      >
+        <ArrowUpRight size={12} />
+      </button>
+    </div>
+  </div>
+);
+
+const MetricGroupBlock: React.FC<{ group: MetricGroup }> = ({ group }) => (
+  <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`flex h-7 w-7 items-center justify-center rounded-full text-sm ${group.avatarBg}`}
+        >
+          {group.avatarGlyph}
+        </span>
+        <span className="text-xs font-semibold text-foreground">{group.title}</span>
+      </div>
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <button
+          className="transition hover:text-foreground"
+          aria-label={`Copy ${group.title} summary`}
+        >
+          <Copy size={13} />
+        </button>
+        <button
+          className="transition hover:text-foreground"
+          aria-label={`Open ${group.title} page`}
+        >
+          <ExternalLink size={13} />
+        </button>
+      </div>
+    </div>
+    {group.rows.map((row) => (
+      <MetricValueRow key={row.title} row={row} />
+    ))}
+  </div>
+);
+
+const TeamDataCard: React.FC<{ teamSnapshot: TeamSnapshot; analytics: LiveAnalytics }> = ({
+  teamSnapshot,
+  analytics,
+}) => {
+  const groups = buildMetricGroups(teamSnapshot, analytics);
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">Team &amp; Data</h3>
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <button
+            onClick={analytics.refresh}
+            className="transition hover:text-foreground"
+            aria-label="Refresh data"
+          >
+            <RotateCw size={15} />
+          </button>
+          <button className="transition hover:text-foreground" aria-label="Quick add team member">
+            <Plus size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        {groups.map((g) => (
+          <MetricGroupBlock key={g.title} group={g} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ── Main Footer Component ────────────────────────────────────── */
+
+export const Footer: React.FC<FooterProps> = ({ teamSnapshot = DEFAULT_TEAM_SNAPSHOT }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const analytics = useLiveAnalytics();
 
   return (
     <div className="mt-auto w-full flex flex-col items-center">
-      {}
+      {/* ── Expanded Area (grid‑animated) ── */}
       <div
-        className={`grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] w-full w-full px-2 sm:px-6 ${
+        className={`grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] w-full px-2 sm:px-6 ${
           isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
         <div className="overflow-hidden">
-          <div className="bg-[#f4f4f5] dark:bg-[#18181B] rounded-[2.5rem] p-8 md:p-14 mb-4 flex flex-col w-full shadow-sm border border-black/5 dark:border-white/5">
-            {/* Top Section Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-6 w-full">
-              {/* Bio Section */}
-              <div className="md:col-span-4 lg:col-span-5">
-                <h2 className="text-xl md:text-2xl font-medium text-zinc-900 dark:text-zinc-100 leading-snug max-w-sm tracking-tight">
-                  Brana Films internal operations hub for production, team,
-                  gear, and studio finance.
-                </h2>
+          <div className="bg-card rounded-[2.5rem] p-4 md:p-6 mb-4 flex flex-col w-full shadow-sm border border-border/50">
+            <div className="max-w-7xl mx-auto w-full">
+              {/* Metrics row */}
+              <MetricsRow analytics={analytics} teamSnapshot={teamSnapshot} />
+
+              {/* 3‑card grid */}
+              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <SystemStatusCard analytics={analytics} />
+                <PerformanceCard analytics={analytics} />
+                <TeamDataCard teamSnapshot={teamSnapshot} analytics={analytics} />
               </div>
 
-              {/* Navigate Section */}
-              <div className="md:col-span-2 lg:col-span-2">
-                <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-4">
-                  Navigate
-                </h3>
-                <ul className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                  <li>
-                    <a
-                      href="/"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Dashboard
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/gears"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Gear
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/team"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Team
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/schedule"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Schedule
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/wallet"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Wallet
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/messages"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Hall Map
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Resources Section */}
-              <div className="md:col-span-3 lg:col-span-2">
-                <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-4">
-                  Resources
-                </h3>
-                <ul className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                  <li>
-                    <a
-                      href="https://www.branafilms.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Company website
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/team"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Team directory
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/schedule"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Production calendar
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="/dashboard/wallet"
-                      className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      Finance & ledger
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-start">
-                <a href="/dashboard/schedule" className="group block mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-medium text-[#FF3B30] dark:text-[#FF453A]">
-                        Production schedule
-                      </h4>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Shoot days, deadlines & bookings
-                      </p>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-[#FF3B30] dark:bg-[#FF453A] text-white flex items-center justify-center transition-transform group-hover:scale-110">
-                      <ArrowUpRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </a>
-
-                <div className="w-full h-px bg-zinc-200 dark:bg-zinc-800 mb-4" />
-
-                <a href="/dashboard/gears" className="group block">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <h4 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
-                        Gear inventory
-                      </h4>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Equipment, assets & availability
-                      </p>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black flex items-center justify-center transition-transform group-hover:scale-110">
-                      <ArrowUpRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            {}
-            {/* Huge Typography */}
-            <div className="mt-16 md:mt-20 mb-8 md:mb-12 flex justify-center lg:justify-start overflow-hidden">
-              <h1 className="text-[25vw] md:text-[14rem] lg:text-[18rem] leading-[0.75] font-black tracking-tighter text-zinc-900 dark:text-zinc-100 select-none">
-                brana
-              </h1>
-            </div>
-
-            {/* Expanded Footer Bottom Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-zinc-200 dark:border-zinc-800/50 text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              <div className="flex items-center gap-4">
-                <span>Brana Films · Internal</span>
-                <span className="text-zinc-400 dark:text-zinc-500">
-                  Staff access only
-                </span>
-              </div>
-              <div className="flex items-center gap-2 uppercase tracking-wider">
-                <span>Addis Ababa</span>
-                <span>3:49 PM</span>
-                <span>22°C</span>
-                <Cloud className="w-3.5 h-3.5 ml-1" />
+              {/* Expanded bottom bar (kept from the first footer) */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 mt-10 border-t border-border text-[10px] sm:text-xs text-muted-foreground font-medium">
+                <div className="flex items-center gap-4">
+                  <span className="text-foreground/70">Brana Films · Live System Analytics</span>
+                  <span className="text-muted-foreground">Team access only</span>
+                </div>
+                <div className="flex items-center gap-2 uppercase tracking-wider">
+                  <span>Addis Ababa</span>
+                  <span>{analytics.clockLabel}</span>
+                  <span>22°C</span>
+                  <Cloud className="w-3.5 h-3.5 ml-1" />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {}
-      {/* Existing Small Footer */}
+      {/* ── Small Footer (always visible) ── */}
       <footer className="w-full px-6 py-2.5 border-t border-border/40 bg-background/50 backdrop-blur-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -296,7 +806,6 @@ export function Footer() {
               vimeo
             </a>
 
-            {}
             {/* Vertical Divider */}
             <div className="w-px h-4 bg-border/60 mx-1"></div>
 
@@ -318,4 +827,6 @@ export function Footer() {
       </footer>
     </div>
   );
-}
+};
+
+export default Footer;

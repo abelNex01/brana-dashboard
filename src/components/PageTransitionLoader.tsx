@@ -39,7 +39,7 @@ export function PageTransitionLoader() {
 
         <div className="w-[200px]">
           <div
-            className="h-1 w-full overflow-hidden rounded-full bg-foreground/10"
+            className="h-[2px] w-full overflow-hidden rounded-full bg-foreground/10"
             role="progressbar"
             aria-valuenow={rounded}
             aria-valuemin={0}

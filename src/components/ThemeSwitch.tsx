@@ -36,8 +36,10 @@ export const ThemeSwitch = memo(function ThemeSwitch({
       style={{
         width: size.w,
         height: size.h,
-        background: "linear-gradient(180deg, #202020 0%, #141414 100%)",
-        border: "1.5px solid #0a0a0a",
+        background: isDark
+          ? "linear-gradient(180deg, #202020 0%, #141414 100%)"
+          : "linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)",
+        border: isDark ? "1.5px solid #0a0a0a" : "1.5px solid #e0e0e0",
       }}
     >
       {/* glass sheen across the top of the track */}
@@ -53,14 +55,14 @@ export const ThemeSwitch = memo(function ThemeSwitch({
         style={{ padding: `0 ${size.pad + 5}px` }}
       >
         <span
-          className={`rounded-full border-[1.5px] border-white transition-all duration-300 ease-out ${
-            isDark ? "scale-100 opacity-100" : "scale-50 opacity-0"
+          className={`rounded-full border-[1.5px] transition-all duration-300 ease-out ${
+            isDark ? "scale-100 opacity-100 border-white" : "scale-50 opacity-0 border-black"
           }`}
           style={{ width: size.icon, height: size.icon }}
         />
         <span
-          className={`rounded-full bg-white/25 transition-all duration-300 ease-out ${
-            isDark ? "scale-50 opacity-0" : "scale-100 opacity-100"
+          className={`rounded-full transition-all duration-300 ease-out ${
+            isDark ? "scale-50 opacity-0 bg-white/25" : "scale-100 opacity-100 bg-black/25"
           }`}
           style={{ width: size.icon, height: 2 }}
         />

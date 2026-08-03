@@ -32,14 +32,14 @@ export const Atmosphere = memo(function Atmosphere() {
         className="absolute -top-[20%] left-1/2 h-[50vmax] w-[50vmax] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(16,185,129,0.14), rgba(132,204,22,0.05) 45%, transparent 70%)",
+            "radial-gradient(circle at 50% 50%, rgba(128,128,128,0.14), rgba(128,128,128,0.05) 45%, transparent 70%)",
         }}
       />
       <div
         className="absolute -bottom-[25%] -left-[10%] h-[40vmax] w-[40vmax] rounded-full opacity-40 blur-3xl"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.10), transparent 65%)",
+            "radial-gradient(circle at 50% 50%, rgba(128,128,128,0.10), transparent 65%)",
         }}
       />
       <div
@@ -70,7 +70,7 @@ export const Emblem = memo(function Emblem({ compact = false }: EmblemProps) {
     <motion.div variants={riseVariants} className={`relative ${margin}`}>
       <div
         aria-hidden
-        className={`absolute ${haloInset} rounded-full bg-emerald-500/15 blur-2xl`}
+        className={`absolute ${haloInset} rounded-full bg-neutral-500/15 blur-2xl`}
       />
 
       <motion.div
@@ -78,7 +78,7 @@ export const Emblem = memo(function Emblem({ compact = false }: EmblemProps) {
         className={`absolute ${ringInset}`}
         style={{
           background:
-            "conic-gradient(from 0deg, transparent 0%, rgba(16,185,129,0.8) 12%, rgba(163,230,53,0.6) 20%, transparent 32%)",
+            "conic-gradient(from 0deg, transparent 0%, rgba(128,128,128,0.8) 12%, rgba(128,128,128,0.6) 20%, transparent 32%)",
           WebkitMask:
             "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
           WebkitMaskComposite: "xor",
@@ -93,21 +93,21 @@ export const Emblem = memo(function Emblem({ compact = false }: EmblemProps) {
         className={`relative flex ${size} items-center justify-center overflow-hidden border border-white/50 bg-white/60 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04]`}
         style={{
           boxShadow:
-            "0 24px 60px -12px rgba(16,185,129,0.25), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4)",
+            "0 24px 60px -12px rgba(128,128,128,0.25), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4)",
         }}
       >
-        <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent" />
+        <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/80 to-transparent" />
 
         <img
           src="/favicon.svg"
           alt="Brana Films"
-          className={`relative ${iconSize} drop-shadow-[0_4px_16px_rgba(16,185,129,0.45)]`}
+          className={`relative ${iconSize} drop-shadow-[0_4px_16px_rgba(128,128,128,0.45)]`}
         />
       </div>
 
       <div
         aria-hidden
-        className="absolute -bottom-4 left-1/2 h-2.5 w-16 -translate-x-1/2 rounded-full bg-emerald-500/25 blur-md"
+        className="absolute -bottom-4 left-1/2 h-2.5 w-16 -translate-x-1/2 rounded-full bg-neutral-500/25 blur-md"
       />
     </motion.div>
   );
@@ -155,7 +155,7 @@ export const LoadingProgressBar = memo(function LoadingProgressBar({
           >
             {String(rounded).padStart(2, "0")}
           </span>
-          <span className="text-xs text-emerald-500/80">%</span>
+          <span className="text-xs text-neutral-500/80">%</span>
         </span>
       </div>
     </div>
